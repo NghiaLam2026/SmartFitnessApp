@@ -43,6 +43,34 @@ The project uses a **modern, scalable, and beginner-friendly stack** to ensure f
 
 ---
 
+## Environment Setup
+
+Create a `.env` file at the project root (not committed) or provide values via `--dart-define`.
+
+Required keys:
+
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+
+Example file (copy to `.env`):
+
+```
+SUPABASE_URL=
+SUPABASE_ANON_KEY=
+```
+
+Alternatively, you can run without a `.env` using build-time defines:
+
+```
+flutter run \
+  --dart-define=SUPABASE_URL=YOUR_URL \
+  --dart-define=SUPABASE_ANON_KEY=YOUR_ANON_KEY
+```
+
+Notes:
+- `.env` is ignored by git; use `.env.example` to share variable names with collaborators.
+- The app will attempt to load `.env` if present, and otherwise fall back to `--dart-define` values.
+
 ## Team Members
 | Name | Role |
 |------|------|
