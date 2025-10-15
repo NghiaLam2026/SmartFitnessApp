@@ -40,7 +40,31 @@ class AuthController extends StateNotifier<AuthState> {
       final res = await _ref.read(authRepositoryProvider).signInWithEmail(email: email, password: password);
       final user = res.user ?? supabase.auth.currentUser;
       state = state.copyWith(loading: false, user: user);
-      if (context.mounted && user != null) context.go('/home');
+      if (context.mounted && user != null) {
+        // Decide whether to show interests onboarding
+        try {
+          final profile = await supabase
+              .from('profiles')
+              .select('interests')
+              .eq('user_id', user.id)
+              .maybeSingle();
+          final interests = profile?['interests'];
+          final Map<String, dynamic> map =
+              (interests is Map<String, dynamic>) ? interests : <String, dynamic>{};
+          final List<dynamic> topicsRaw = (map['topics'] is List) ? map['topics'] as List : const [];
+          final bool skipped = map['skipped'] == true;
+          final bool hasTopics = topicsRaw.isNotEmpty;
+          final bool shouldPrompt = !hasTopics && !skipped;
+          if (shouldPrompt) {
+            context.go('/interests');
+          } else {
+            context.go('/home');
+          }
+        } catch (_) {
+          // On any error, proceed to home
+          context.go('/home');
+        }
+      }
     } on AuthException catch (e) {
       state = state.copyWith(loading: false, error: e.message);
     } catch (e) {

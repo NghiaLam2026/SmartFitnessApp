@@ -6,6 +6,7 @@ import 'core/supabase/supabase_client.dart';
 import 'features/auth/presentation/login_page.dart';
 import 'features/auth/presentation/signup_page.dart';
 import 'features/home/presentation/home_page.dart';
+import 'features/profile/presentation/interests_page.dart';
 
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
@@ -51,6 +52,10 @@ final _router = GoRouter(
     GoRoute(
       path: '/home',
       builder: (context, state) => const HomePage(),
+    ),
+    GoRoute(
+      path: '/interests',
+      builder: (context, state) => const InterestsPage(),
     ),
   ],
 );

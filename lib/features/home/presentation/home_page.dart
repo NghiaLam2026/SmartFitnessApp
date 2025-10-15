@@ -3,12 +3,45 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../../core/supabase/supabase_client.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+final articlesProvider = FutureProvider.family<List<Map<String, dynamic>>, String?>((ref, userId) async {
+  if (userId == null) return <Map<String, dynamic>>[];
+  // Fetch user interests
+  final profile = await supabase
+      .from('profiles')
+      .select('interests, zip_code')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+  final interests = profile?['interests'];
+  final List<String> topics = (interests is Map<String, dynamic> && interests['topics'] is List)
+      ? List<String>.from(interests['topics'] as List)
+      : <String>[];
+
+  // Build query for articles table using overlap of topics
+  final query = supabase.from('articles').select('id, title, url, source_id, published_at, topics, summary').order('published_at', ascending: false);
+  List<dynamic> rows;
+  if (topics.isEmpty) {
+    // No interests chosen: show latest overall
+    rows = await query.limit(10);
+  } else {
+    // Use @> or && semantics; Supabase PostgREST supports Postgres operators via query params
+    // We'll use 'overlaps' (&&) by applying .contains on text[] requires rpc; instead filter client-side after fetching a recent window
+    final recent = await query.limit(50);
+    rows = (recent as List<dynamic>).where((r) {
+      final t = (r['topics'] is List) ? List<String>.from(r['topics'] as List) : <String>[];
+      return t.any((x) => topics.contains(x));
+    }).take(10).toList();
+  }
+  return rows.cast<Map<String, dynamic>>();
+});
 
 final profileProvider = FutureProvider.family<Map<String, dynamic>?, String?>((ref, userId) async {
   if (userId == null) return null;
   final data = await supabase
       .from('profiles')
-      .select('display_name, zip_code')
+      .select('display_name, zip_code, interests')
       .eq('user_id', userId)
       .maybeSingle();
   return data;
@@ -21,6 +54,7 @@ class HomePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authControllerProvider);
     final profileAsync = ref.watch(profileProvider(auth.user?.id));
+    final articlesAsync = ref.watch(articlesProvider(auth.user?.id));
 
     final name = profileAsync.maybeWhen(
       data: (p) => (p?['display_name'] as String?)?.trim(),
@@ -34,6 +68,11 @@ class HomePage extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Smart Fitness'),
         actions: [
+          IconButton(
+            onPressed: () => context.push('/interests'),
+            icon: const Icon(Icons.tune_rounded),
+            tooltip: 'Interests',
+          ),
           IconButton(
             onPressed: () => ref.read(authControllerProvider.notifier).signOut(context),
             icon: const Icon(Icons.logout_rounded),
@@ -52,6 +91,8 @@ class HomePage extends ConsumerWidget {
               _QuickActions(),
               const SizedBox(height: 16),
               _Highlights(),
+              const SizedBox(height: 16),
+              _ArticlesSection(articlesAsync: articlesAsync),
             ],
           ),
         ),
@@ -168,6 +209,92 @@ class _Highlights extends StatelessWidget {
   }
 }
 
+class _ArticlesSection extends ConsumerWidget {
+  const _ArticlesSection({required this.articlesAsync});
+  final AsyncValue<List<Map<String, dynamic>>> articlesAsync;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Your News Feed', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+        const SizedBox(height: 12),
+        articlesAsync.when(
+          data: (articles) {
+            if (articles.isEmpty) {
+              return Card(
+                child: ListTile(
+                  leading: const Icon(Icons.article_outlined),
+                  title: const Text('No articles yet'),
+                  subtitle: const Text('Pick interests to personalize your news feed.'),
+                  trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+                  onTap: () => context.push('/interests'),
+                ),
+              );
+            }
+            return Column(
+              children: [
+                for (final a in articles.take(10)) _ArticleTile(article: a),
+              ],
+            );
+          },
+          loading: () => const LinearProgressIndicator(minHeight: 2),
+          error: (_, __) => const SizedBox.shrink(),
+        ),
+      ],
+    );
+  }
+}
+
+class _ArticleTile extends StatelessWidget {
+  const _ArticleTile({required this.article});
+  final Map<String, dynamic> article;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final String title = (article['title'] as String?) ?? 'Untitled';
+    final String url = (article['url'] as String?) ?? '';
+    final DateTime? publishedAt = article['published_at'] != null
+        ? DateTime.tryParse(article['published_at'] as String)
+        : null;
+    final String subtitle = publishedAt != null
+        ? 'Published ${_formatRelative(publishedAt)}'
+        : 'Tap to read';
+    return Card(
+      child: ListTile(
+        leading: const Icon(Icons.public),
+        title: Text(title, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+        subtitle: Text(
+          subtitle,
+          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.7)),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        trailing: const Icon(Icons.open_in_new_rounded, size: 18),
+        onTap: () async {
+          if (url.isEmpty) return;
+          final uri = Uri.parse(url);
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+          }
+        },
+      ),
+    );
+  }
+
+  String _formatRelative(DateTime dt) {
+    final now = DateTime.now();
+    final diff = now.difference(dt);
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+  }
+}
+
 class _HighlightCard extends StatelessWidget {
   const _HighlightCard({required this.title, required this.subtitle, required this.icon});
   final String title;
@@ -197,5 +324,3 @@ class _HighlightCard extends StatelessWidget {
     );
   }
 }
-
-
