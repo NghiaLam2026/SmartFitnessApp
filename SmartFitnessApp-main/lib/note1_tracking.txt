@@ -1,0 +1,12 @@
+recommended flutter packages 
+
+steps - pedometer 
+distance, GPS - geolocator
+health data - health
+
+to run pedometer do 
+
+dependencies:
+    pedometer: ^3.0.0
+
+on pubspec.yaml then run flutter pub get 
