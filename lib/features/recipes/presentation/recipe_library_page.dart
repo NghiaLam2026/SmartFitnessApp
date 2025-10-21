@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../recipes/application/recipes_providers.dart';
 import '../domain/recipe_models.dart';
-import 'package:go_router/go_router.dart';
 
 class RecipeLibraryPage extends ConsumerStatefulWidget {
   const RecipeLibraryPage({super.key});
@@ -27,9 +27,7 @@ class _RecipeLibraryPageState extends ConsumerState<RecipeLibraryPage> {
     final savedIdsAsync = ref.watch(savedRecipeIdsProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Recipes'),
-      ),
+      appBar: AppBar(title: const Text('Recipes')),
       body: SafeArea(
         child: Column(
           children: [
@@ -40,12 +38,11 @@ class _RecipeLibraryPageState extends ConsumerState<RecipeLibraryPage> {
                   Expanded(
                     child: TextField(
                       controller: _searchController,
-                      decoration: const InputDecoration(
-                        hintText: 'Search recipes...'
-                      ),
+                      decoration: const InputDecoration(hintText: 'Search recipes...'),
                       textInputAction: TextInputAction.search,
                       onSubmitted: (value) {
                         ref.read(recipesQueryProvider.notifier).state = query.copyWith(searchTerm: value.trim());
+                        ref.invalidate(recipesListProvider);
                       },
                     ),
                   ),
@@ -54,6 +51,7 @@ class _RecipeLibraryPageState extends ConsumerState<RecipeLibraryPage> {
                     onPressed: () {
                       ref.read(recipesQueryProvider.notifier).state = const RecipesQuery();
                       _searchController.clear();
+                      ref.invalidate(recipesListProvider);
                     },
                     icon: const Icon(Icons.refresh_rounded),
                     tooltip: 'Reset',
@@ -70,14 +68,29 @@ class _RecipeLibraryPageState extends ConsumerState<RecipeLibraryPage> {
                   _PurposeChip(
                     label: 'All',
                     selected: query.purpose == null,
-                    onSelected: () => ref.read(recipesQueryProvider.notifier).state = query.copyWith(purpose: null),
+                    onSelected: () {
+                      ref.read(recipesQueryProvider.notifier).state = query.copyWith(clearPurpose: true);
+                      ref.invalidate(recipesListProvider);
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  _PurposeChip(
+                    label: 'Favorites',
+                    selected: query.favoritesOnly,
+                    onSelected: () {
+                      ref.read(recipesQueryProvider.notifier).state = query.copyWith(favoritesOnly: !query.favoritesOnly);
+                      ref.invalidate(recipesListProvider);
+                    },
                   ),
                   const SizedBox(width: 8),
                   for (final p in RecipePurpose.values) ...[
                     _PurposeChip(
                       label: p.label,
                       selected: query.purpose == p,
-                      onSelected: () => ref.read(recipesQueryProvider.notifier).state = query.copyWith(purpose: p),
+                      onSelected: () {
+                        ref.read(recipesQueryProvider.notifier).state = query.copyWith(purpose: p);
+                        ref.invalidate(recipesListProvider);
+                      },
                     ),
                     const SizedBox(width: 8),
                   ],
@@ -105,6 +118,7 @@ class _RecipeLibraryPageState extends ConsumerState<RecipeLibraryPage> {
                           newSet.remove(f);
                         }
                         ref.read(recipesQueryProvider.notifier).state = query.copyWith(dietaryFilters: newSet);
+                        ref.invalidate(recipesListProvider);
                       },
                     ),
                 ],

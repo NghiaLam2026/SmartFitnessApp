@@ -11,21 +11,16 @@ class RecipeDetailPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final recipeAsync = ref.watch(recipeDetailProvider(recipeId));
     final savedIdsAsync = ref.watch(savedRecipeIdsProvider);
-
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Recipe'),
-      ),
+      appBar: AppBar(title: const Text('Recipe')),
       body: recipeAsync.when(
         data: (recipe) {
-          if (recipe == null) {
-            return const _FallbackError();
-          }
+          if (recipe == null) return const _FallbackError();
           final saved = savedIdsAsync.maybeWhen(data: (s) => s.contains(recipe.id), orElse: () => false);
           return _RecipeDetailBody(recipe: recipe, saved: saved);
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, st) => const _FallbackError(),
+        error: (_, __) => const _FallbackError(),
       ),
       floatingActionButton: recipeAsync.maybeWhen(
         data: (recipe) {
@@ -33,15 +28,35 @@ class RecipeDetailPage extends ConsumerWidget {
           final isSaved = savedIdsAsync.maybeWhen(data: (s) => s.contains(recipe.id), orElse: () => false);
           return FloatingActionButton.extended(
             onPressed: () async {
-              await ref.read(toggleSavedRecipeProvider(recipe.id).future);
+              // Re-evaluate saved state at click time to avoid stale closures
+              final nowSaved = await ref.read(toggleSavedRecipeProvider(recipe.id).future);
+              // Ensure UI updates immediately
+              ref.invalidate(savedRecipeIdsProvider);
+              ref.invalidate(recipesListProvider);
+              // Force rebuild of this FAB state by refreshing recipeAsync
+              ref.invalidate(recipeDetailProvider(recipe.id));
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(isSaved ? 'Removed from favorites' : 'Saved to favorites')),
+                  SnackBar(content: Text(nowSaved ? 'Saved to favorites' : 'Removed from favorites')),
                 );
               }
             },
-            icon: Icon(isSaved ? Icons.bookmark_remove_rounded : Icons.bookmark_add_rounded),
-            label: Text(isSaved ? 'Unsave' : 'Save'),
+            icon: Icon(
+              ref.watch(savedRecipeIdsProvider).maybeWhen(
+                    data: (s) => s.contains(recipe.id),
+                    orElse: () => isSaved,
+                  )
+                  ? Icons.bookmark_remove_rounded
+                  : Icons.bookmark_add_rounded,
+            ),
+            label: Text(
+              ref.watch(savedRecipeIdsProvider).maybeWhen(
+                    data: (s) => s.contains(recipe.id),
+                    orElse: () => isSaved,
+                  )
+                  ? 'Unsave'
+                  : 'Save',
+            ),
           );
         },
         orElse: () => const SizedBox.shrink(),
@@ -76,10 +91,7 @@ class _RecipeDetailBody extends StatelessWidget {
                         Chip(label: Text(recipe.purpose.label)),
                         const SizedBox(width: 8),
                         if (!recipe.hasNutrition)
-                          Chip(
-                            label: const Text('Incomplete nutrition'),
-                            avatar: const Icon(Icons.info_outline_rounded, size: 18),
-                          ),
+                          Chip(label: const Text('Incomplete nutrition'), avatar: const Icon(Icons.info_outline_rounded, size: 18)),
                       ],
                     ),
                   ],
@@ -90,7 +102,6 @@ class _RecipeDetailBody extends StatelessWidget {
           ),
 
           const SizedBox(height: 16),
-
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -111,7 +122,6 @@ class _RecipeDetailBody extends StatelessWidget {
           ),
 
           const SizedBox(height: 16),
-
           Text('Ingredients', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
           Card(
@@ -136,17 +146,12 @@ class _RecipeDetailBody extends StatelessWidget {
           ),
 
           const SizedBox(height: 16),
-
           Text('Instructions', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: Text(
-                (recipe.instructions?.isNotEmpty == true)
-                    ? recipe.instructions!
-                    : 'No instructions available.',
-              ),
+              child: Text((recipe.instructions?.isNotEmpty == true) ? recipe.instructions! : 'No instructions available.'),
             ),
           ),
         ],
@@ -156,7 +161,7 @@ class _RecipeDetailBody extends StatelessWidget {
 
   String _ingredientLine(IngredientItem ing) {
     final qty = ing.quantity != null ? ing.quantity!.toStringAsFixed(ing.quantity! % 1 == 0 ? 0 : 1) : '';
-    final unit = ing.unit != null && ing.unit!.isNotEmpty ? ' ${ing.unit}' : '';
+    final unit = (ing.unit != null && ing.unit!.isNotEmpty) ? ' ${ing.unit}' : '';
     final prefix = qty.isNotEmpty ? '$qty$unit • ' : '';
     return '$prefix${ing.name}';
   }
@@ -172,10 +177,7 @@ class _MacroBadge extends StatelessWidget {
     final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(999),
-      ),
+      decoration: BoxDecoration(color: theme.colorScheme.primary.withOpacity(0.08), borderRadius: BorderRadius.circular(999)),
       child: Text('$label ${value != null ? value!.toStringAsFixed(value! % 1 == 0 ? 0 : 0) : '—'}g'),
     );
   }

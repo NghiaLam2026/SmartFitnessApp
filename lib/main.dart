@@ -6,6 +6,8 @@ import 'core/supabase/supabase_client.dart';
 import 'features/auth/presentation/login_page.dart';
 import 'features/auth/presentation/signup_page.dart';
 import 'features/home/presentation/home_page.dart';
+import 'features/recipes/presentation/recipe_library_page.dart';
+import 'features/recipes/presentation/recipe_detail_page.dart';
 
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
@@ -51,6 +53,21 @@ final _router = GoRouter(
     GoRoute(
       path: '/home',
       builder: (context, state) => const HomePage(),
+      routes: [
+        GoRoute(
+          path: 'recipes',
+          builder: (context, state) => const RecipeLibraryPage(),
+          routes: [
+            GoRoute(
+              path: 'detail',
+              builder: (context, state) {
+                final id = (state.extra as String?) ?? '';
+                return RecipeDetailPage(recipeId: id);
+              },
+            ),
+          ],
+        ),
+      ],
     ),
   ],
 );
