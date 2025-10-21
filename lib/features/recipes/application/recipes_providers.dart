@@ -11,6 +11,7 @@ final recipesRepositoryProvider = Provider<RecipesRepository>((ref) {
 class RecipesQuery {
   final String searchTerm;
   final RecipePurpose? purpose;
+  final bool favoritesOnly;
   final Set<DietaryFilter> dietaryFilters;
   final int limit;
   final int offset;
@@ -18,6 +19,7 @@ class RecipesQuery {
   const RecipesQuery({
     this.searchTerm = '',
     this.purpose,
+    this.favoritesOnly = false,
     this.dietaryFilters = const {},
     this.limit = 50,
     this.offset = 0,
@@ -26,13 +28,16 @@ class RecipesQuery {
   RecipesQuery copyWith({
     String? searchTerm,
     RecipePurpose? purpose,
+    bool clearPurpose = false,
+    bool? favoritesOnly,
     Set<DietaryFilter>? dietaryFilters,
     int? limit,
     int? offset,
   }) {
     return RecipesQuery(
       searchTerm: searchTerm ?? this.searchTerm,
-      purpose: purpose ?? this.purpose,
+      purpose: clearPurpose ? null : (purpose ?? this.purpose),
+      favoritesOnly: favoritesOnly ?? this.favoritesOnly,
       dietaryFilters: dietaryFilters ?? this.dietaryFilters,
       limit: limit ?? this.limit,
       offset: offset ?? this.offset,
@@ -44,28 +49,29 @@ final recipesQueryProvider = StateProvider<RecipesQuery>((ref) => const RecipesQ
 
 final recipesListProvider = FutureProvider.autoDispose<List<Recipe>>((ref) async {
   final repo = ref.watch(recipesRepositoryProvider);
-  final query = ref.watch(recipesQueryProvider);
+  final q = ref.watch(recipesQueryProvider);
+  await ref.watch(savedRecipeIdsProvider.future);
 
-  // Fetch from Supabase with server-side filters for purpose and text, then client-side dietary filtering
-  final results = await repo.fetchRecipes(
-    search: query.searchTerm.isNotEmpty ? query.searchTerm : null,
-    purpose: query.purpose,
-    limit: query.limit,
-    offset: query.offset,
-  );
-
-  final filtered = results.where((r) => r.matchesDietary(query.dietaryFilters)).toList();
-  if (filtered.isNotEmpty) return filtered;
-
-  // Suggest similar when empty: drop dietary first; then drop search; finally drop purpose
-  if (results.isNotEmpty) return results; // already a suggestion by ignoring dietary
-
-  if (query.searchTerm.isNotEmpty || query.purpose != null) {
-    final fallback = await repo.fetchRecipes(limit: 12);
-    return fallback;
+  if (q.favoritesOnly) {
+    final user = supabase.auth.currentUser;
+    if (user == null) return <Recipe>[];
+    final results = await repo.fetchFavoriteRecipes(
+      userId: user.id,
+      search: q.searchTerm.isNotEmpty ? q.searchTerm : null,
+      limit: q.limit,
+      offset: q.offset,
+    );
+    return results;
   }
 
-  return <Recipe>[];
+  final results = await repo.fetchRecipes(
+    search: q.searchTerm.isNotEmpty ? q.searchTerm : null,
+    purpose: q.purpose,
+    dietaryFilters: q.dietaryFilters,
+    limit: q.limit,
+    offset: q.offset,
+  );
+  return results;
 });
 
 final savedRecipeIdsProvider = FutureProvider.autoDispose<Set<String>>((ref) async {
@@ -80,7 +86,7 @@ final recipeDetailProvider = FutureProvider.family.autoDispose<Recipe?, String>(
   return repo.fetchRecipeById(recipeId);
 });
 
-final toggleSavedRecipeProvider = FutureProvider.family<bool, String>((ref, recipeId) async {
+final toggleSavedRecipeProvider = FutureProvider.family.autoDispose<bool, String>((ref, recipeId) async {
   final user = supabase.auth.currentUser;
   if (user == null) throw const AuthException('Not logged in');
   final repo = ref.read(recipesRepositoryProvider);

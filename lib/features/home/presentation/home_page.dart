@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../../core/supabase/supabase_client.dart';
+import 'package:smart_fitness_app/features/tracking/mock_test_tracker_screen.dart';
 
 final profileProvider = FutureProvider.family<Map<String, dynamic>?, String?>((ref, userId) async {
   if (userId == null) return null;
@@ -112,25 +113,40 @@ class _Header extends StatelessWidget {
 class _QuickActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Expanded(
-          child: FilledButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.flash_on_rounded),
-            label: const Text('Start Workout'),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.calendar_today_rounded, size: 18),
-            label: const Text('My Plan'),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-              textStyle: const TextStyle(fontWeight: FontWeight.w600),
+        Row(
+          children: [
+            Expanded(
+              child: FilledButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.flash_on_rounded),
+                label: const Text('Start Workout'),
+              ),
             ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.calendar_today_rounded, size: 18),
+                label: const Text('My Plan'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                  textStyle: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          onPressed: () => context.push('/home/recipes'),
+          icon: const Icon(Icons.menu_book_rounded, size: 18),
+          label: const Text('Recipes'),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            textStyle: const TextStyle(fontWeight: FontWeight.w600),
           ),
         ),
       ],
@@ -154,12 +170,23 @@ class _Highlights extends StatelessWidget {
           height: 150,
           child: ListView(
             scrollDirection: Axis.horizontal,
-            children: const [
-              _HighlightCard(title: 'Today\'s Goal', subtitle: 'Complete 1 workout', icon: Icons.flag_rounded),
-              SizedBox(width: 12),
-              _HighlightCard(title: 'Streak', subtitle: '3 days', icon: Icons.local_fire_department_rounded),
-              SizedBox(width: 12),
-              _HighlightCard(title: 'Steps', subtitle: '8,450', icon: Icons.directions_walk_rounded),
+            children:  [ //here i made changes - viviana
+              const _HighlightCard(title: 'Today\'s Goal', subtitle: 'complete 1 workout', icon: Icons.flag_rounded),
+              const SizedBox(width: 12),
+              const _HighlightCard(title: 'Streak', subtitle: '3 days', icon: Icons.local_fire_department_rounded),
+              const SizedBox(width:12),
+              //new tappable step trcker card
+              GestureDetector(
+                onTap: (){
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ActivityTrackerScreen(),
+                    )
+                  );
+                },
+                child: const _HighlightCard(title: 'Step Tracker', subtitle: 'Track your daily steps', icon: Icons.directions_walk_rounded),
+              )
             ],
           ),
         ),

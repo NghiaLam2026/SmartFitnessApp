@@ -12,10 +12,7 @@ class IngredientItem {
     final qtyRaw = map['qty'];
     double? qty;
     if (qtyRaw is num) qty = qtyRaw.toDouble();
-    if (qtyRaw is String) {
-      final parsed = double.tryParse(qtyRaw);
-      qty = parsed;
-    }
+    if (qtyRaw is String) qty = double.tryParse(qtyRaw);
     return IngredientItem(
       name: (map['name'] as String?)?.trim() ?? 'Unknown',
       quantity: qty,
@@ -80,11 +77,11 @@ class RecipeMacros {
       if (v is String) return double.tryParse(v);
       return null;
     }
-    return RecipeMacros(
-      protein: _toDouble(map['protein']),
-      carbs: _toDouble(map['carbs']),
-      fat: _toDouble(map['fat']),
-    );
+    // Accept both lowercase keys and uppercase keys like {"Protein": 39, "Carbs": 61, "Fat": 77}
+    final protein = _toDouble(map['protein'] ?? map['Protein']);
+    final carbs = _toDouble(map['carbs'] ?? map['Carbs']);
+    final fat = _toDouble(map['fat'] ?? map['Fat']);
+    return RecipeMacros(protein: protein, carbs: carbs, fat: fat);
   }
 }
 
@@ -113,54 +110,53 @@ class Recipe {
   bool get hasNutrition => calories != null && macros.isComplete;
 
   factory Recipe.fromMap(Map<String, dynamic> map) {
-    final ingredientsRaw = map['ingredients'];
-    final List<IngredientItem> items;
-    if (ingredientsRaw is List) {
-      items = ingredientsRaw
+    final rawIngredients = map['ingredients'];
+    final List<IngredientItem> ing;
+    if (rawIngredients is List) {
+      ing = rawIngredients
           .whereType<Map<String, dynamic>>()
           .map((e) => IngredientItem.fromMap(e))
           .toList();
     } else {
-      items = const <IngredientItem>[];
+      ing = const <IngredientItem>[];
     }
 
-    double? calories;
+    double? cal;
     final calRaw = map['calories'];
-    if (calRaw is num) calories = calRaw.toDouble();
-    if (calRaw is String) calories = double.tryParse(calRaw);
+    if (calRaw is num) cal = calRaw.toDouble();
+    if (calRaw is String) cal = double.tryParse(calRaw);
 
     return Recipe(
       id: (map['id'] as String?) ?? '',
       title: (map['title'] as String?)?.trim() ?? 'Untitled',
       purpose: RecipePurposeApi.from(map['purpose']) ?? RecipePurpose.maintenance,
-      calories: calories,
+      calories: cal,
       macros: RecipeMacros.fromMap(map['macros'] as Map<String, dynamic>?),
-      ingredients: items,
+      ingredients: ing,
       instructions: (map['instructions'] as String?)?.trim(),
     );
   }
 
   bool matchesDietary(Set<DietaryFilter> filters) {
     if (filters.isEmpty) return true;
-    final namesLower = ingredients.map((e) => e.name.toLowerCase()).toList();
-    bool forbidAny(Iterable<String> blocked) => namesLower.any((n) => blocked.any((b) => n.contains(b)));
-
+    final names = ingredients.map((e) => e.name.toLowerCase()).toList();
+    bool anyContains(List<String> banned) => names.any((n) => banned.any((b) => n.contains(b)));
     for (final f in filters) {
       switch (f) {
         case DietaryFilter.vegan:
-          if (forbidAny(['chicken', 'beef', 'pork', 'fish', 'egg', 'milk', 'cheese', 'yogurt', 'butter', 'honey'])) return false;
+          if (anyContains(['chicken','beef','pork','fish','egg','milk','cheese','yogurt','butter','honey'])) return false;
           break;
         case DietaryFilter.vegetarian:
-          if (forbidAny(['chicken', 'beef', 'pork', 'fish'])) return false;
+          if (anyContains(['chicken','beef','pork','fish'])) return false;
           break;
         case DietaryFilter.glutenFree:
-          if (forbidAny(['wheat', 'barley', 'rye', 'malt', 'pasta', 'bread', 'flour'])) return false;
+          if (anyContains(['wheat','barley','rye','malt','pasta','bread','flour'])) return false;
           break;
         case DietaryFilter.dairyFree:
-          if (forbidAny(['milk', 'cheese', 'butter', 'yogurt', 'cream', 'whey'])) return false;
+          if (anyContains(['milk','cheese','butter','yogurt','cream','whey'])) return false;
           break;
         case DietaryFilter.nutFree:
-          if (forbidAny(['almond', 'peanut', 'walnut', 'cashew', 'pecan', 'hazelnut', 'pistachio'])) return false;
+          if (anyContains(['almond','peanut','walnut','cashew','pecan','hazelnut','pistachio'])) return false;
           break;
       }
     }
