@@ -25,12 +25,21 @@ class AuthRepositoryImpl implements AuthRepository {
     final user = _client.auth.currentUser;
     if (user != null) {
       try {
-        await _client.from('profiles').upsert({
+        final Map<String, dynamic> payload = {
           'user_id': user.id,
-          'display_name': displayName ?? '', // optional, can be filled later in profile page
-          'zip_code': zip ?? '',
           'updated_at': DateTime.now().toIso8601String(),
-        });
+        };
+        final metaName = (user.userMetadata?['display_name'] as String?)?.trim();
+        final effectiveName = ((displayName ?? '').trim().isNotEmpty)
+            ? displayName!.trim()
+            : (metaName ?? '');
+        if (effectiveName.isNotEmpty) {
+          payload['display_name'] = effectiveName;
+        }
+        if ((zip ?? '').trim().isNotEmpty) {
+          payload['zip_code'] = zip!.trim();
+        }
+        await _client.from('profiles').upsert(payload);
         print('✅ Profile ensured for ${user.id}');
       } catch (e) {
         print('❌ Profile upsert failed: $e');
@@ -52,10 +61,26 @@ class AuthRepositoryImpl implements AuthRepository {
     final response = await _client.auth.signUp(
       email: email.trim(),
       password: password,
+      data: {
+        if ((displayName ?? '').trim().isNotEmpty) 'display_name': displayName!.trim(),
+        if ((zip ?? '').trim().isNotEmpty) 'zip_code': zip!.trim(),
+      },
     );
 
-    // Step 2: Do NOT insert profile here (RLS will block it)
-    // Profile will be created automatically when the user signs in later.
+    // Step 2: Bootstrap profile and dashboard prefs via SECURITY DEFINER RPC
+    // This avoids RLS issues and works even before first login.
+    final newUserId = response.user?.id;
+    if (newUserId != null) {
+      try {
+        await _client.rpc('post_auth_bootstrap', params: {
+          'p_user_id': newUserId,
+          'p_display_name': displayName ?? '',
+          'p_zip': zip ?? '',
+        });
+      } catch (_) {
+        // Non-fatal: UI will still work; profile will be ensured on first sign-in as a fallback
+      }
+    }
 
     print('🆕 New user created: ${response.user?.id}');
     return response;
@@ -63,8 +88,8 @@ class AuthRepositoryImpl implements AuthRepository {
 
   // 🔹 Sign out
   @override
-  Future<void> signOut() async {
-    await _client.auth.signOut();
+  Future<void> signOut({bool global = false}) async {
+    await _client.auth.signOut(scope: global ? SignOutScope.global : SignOutScope.local);
   }
 
   // 🔹 Current session getter
@@ -81,6 +106,15 @@ class AuthRepositoryImpl implements AuthRepository {
     await _client.auth.resend(
       type: OtpType.signup,
       email: email.trim(),
+    );
+  }
+
+  // 🔹 Reset password (magic link)
+  @override
+  Future<void> resetPassword({required String email, String? redirectTo}) async {
+    await _client.auth.resetPasswordForEmail(
+      email.trim(),
+      redirectTo: redirectTo,
     );
   }
 }

@@ -62,7 +62,7 @@ class AuthController extends StateNotifier<AuthState> {
       }
       // Stop loading and clear any user
       state = state.copyWith(loading: false, user: null);
-      if (context.mounted) context.go('/login');
+      if (context.mounted) context.go('/login?justSignedUp=1');
     } on AuthException catch (e) {
       state = state.copyWith(loading: false, error: e.message);
     } catch (e) {
@@ -74,7 +74,7 @@ class AuthController extends StateNotifier<AuthState> {
   Future<void> signOut(BuildContext context) async {
     state = state.copyWith(loading: true, error: null);
     try {
-      await _ref.read(authRepositoryProvider).signOut();
+      await _ref.read(authRepositoryProvider).signOut(global: true);
       state = state.copyWith(loading: false, user: null);
       if (context.mounted) context.go('/login');
     } catch (e) {
@@ -90,6 +90,19 @@ class AuthController extends StateNotifier<AuthState> {
       state = state.copyWith(error: e.message);
       return false;
     } catch (e) {
+      state = state.copyWith(error: 'Unexpected error');
+      return false;
+    }
+  }
+
+  Future<bool> resetPassword(String email, {String? redirectTo}) async {
+    try {
+      await _ref.read(authRepositoryProvider).resetPassword(email: email, redirectTo: redirectTo);
+      return true;
+    } on AuthException catch (e) {
+      state = state.copyWith(error: e.message);
+      return false;
+    } catch (_) {
       state = state.copyWith(error: 'Unexpected error');
       return false;
     }
