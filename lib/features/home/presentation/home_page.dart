@@ -36,6 +36,14 @@ class HomePage extends ConsumerWidget {
         title: const Text('Smart Fitness'),
         actions: [
           IconButton(
+            onPressed: () async {
+              await context.push('/profile');
+              ref.invalidate(profileProvider(auth.user?.id));
+            },
+            icon: const Icon(Icons.build_rounded),
+            tooltip: 'Edit profile',
+          ),
+          IconButton(
             onPressed: () => ref.read(authControllerProvider.notifier).signOut(context),
             icon: const Icon(Icons.logout_rounded),
             tooltip: 'Sign out',
@@ -88,23 +96,7 @@ class _Header extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        profileAsync.when(
-          data: (p) {
-            final hasName = (p?['display_name'] as String?)?.trim().isNotEmpty == true;
-            if (hasName) return const SizedBox.shrink();
-            return Card(
-              child: ListTile(
-                leading: const Icon(Icons.person_outline_rounded),
-                title: const Text('Complete your profile'),
-                subtitle: const Text('Add your name and ZIP to personalize workouts and news.'),
-                trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
-                onTap: () => context.push('/signup'),
-              ),
-            );
-          },
-          loading: () => const LinearProgressIndicator(minHeight: 2),
-          error: (_, __) => const SizedBox.shrink(),
-        ),
+        // Profile edit now lives in the app bar wrench action
       ],
     );
   }

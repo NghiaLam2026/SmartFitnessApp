@@ -5,9 +5,11 @@ import 'package:go_router/go_router.dart';
 import 'core/supabase/supabase_client.dart';
 import 'features/auth/presentation/login_page.dart';
 import 'features/auth/presentation/signup_page.dart';
+import 'features/auth/presentation/forgot_password_page.dart';
 import 'features/home/presentation/home_page.dart';
 import 'features/recipes/presentation/recipe_library_page.dart';
 import 'features/recipes/presentation/recipe_detail_page.dart';
+import 'features/profile/presentation/profile_page.dart';
 
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
@@ -35,16 +37,22 @@ final _router = GoRouter(
   redirect: (context, state) {
     final bool isLoggedIn = supabase.auth.currentUser != null;
     final String location = state.matchedLocation;
+    final params = state.uri.queryParameters;
+    final justSignedUp = params['justSignedUp'] == '1';
 
-    final bool isAuthRoute = location == '/login' || location == '/signup';
+    final bool isLoginRoute = location == '/login';
     if (!isLoggedIn && location == '/home') return '/login';
-    if (isLoggedIn && isAuthRoute) return '/home';
+    if (isLoggedIn && isLoginRoute && !justSignedUp) return '/home';
     return null;
   },
   routes: [
     GoRoute(
       path: '/login',
       builder: (context, state) => const LoginPage(),
+    ),
+    GoRoute(
+      path: '/forgot-password',
+      builder: (context, state) => const ForgotPasswordPage(),
     ),
     GoRoute(
       path: '/signup',
@@ -68,6 +76,10 @@ final _router = GoRouter(
           ],
         ),
       ],
+    ),
+    GoRoute(
+      path: '/profile',
+      builder: (context, state) => const ProfilePage(),
     ),
   ],
 );

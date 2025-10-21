@@ -58,50 +58,22 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed: () async {
-                    final ok = await showDialog<bool>(
-                      context: context,
-                      builder: (context) {
-                        return AlertDialog(
-                          title: const Text('Resend verification?'),
-                          content: const Text('If your email is not confirmed, we can resend a verification link.'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(context).pop(false),
-                              child: const Text('Cancel'),
-                            ),
-                            FilledButton(
-                              onPressed: () => Navigator.of(context).pop(true),
-                              child: const Text('Resend'),
-                            ),
-                          ],
-                        );
-                      },
-                    );
-                    if (ok == true) {
-                      final email = _email.text.trim();
-                      if (email.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Enter your email first')),
-                        );
-                        return;
-                      }
-                      final success = await ref.read(authControllerProvider.notifier).resendEmailConfirmation(email);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(success ? 'Verification email sent' : 'Failed to send verification email')),
-                      );
-                    }
+                  onPressed: () {
+                    context.push('/forgot-password');
                   },
-                  child: const Text('Forgot password? / Resend verification'),
+                  child: const Text('Forgot password?'),
                 ),
               ),
               const SizedBox(height: 8),
               FilledButton(
                 onPressed: isLoading
                     ? null
-                    : () => ref
-                        .read(authControllerProvider.notifier)
-                        .signIn(context, email: _email.text, password: _password.text),
+                    : () {
+                        if (!_formKey.currentState!.validate()) return;
+                        ref
+                            .read(authControllerProvider.notifier)
+                            .signIn(context, email: _email.text, password: _password.text);
+                      },
                 child: isLoading
                     ? const SizedBox(
                         height: 20,

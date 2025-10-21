@@ -33,7 +33,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
 
   String? _passwordRule(String? v) {
     if (v == null || v.isEmpty) return 'Password is required';
-    if (v.length < 8) return 'Use at least 8 characters';
+    if (v.length < 6) return 'Use at least 6 characters';
     return null;
   }
 
@@ -83,7 +83,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
               PasswordField(
                 controller: _password,
                 label: 'Create password',
-                hint: 'At least 8 characters',
+                hint: 'At least 6 characters',
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -125,13 +125,18 @@ class _SignupPageState extends ConsumerState<SignupPage> {
               FilledButton(
                 onPressed: isLoading
                     ? null
-                    : () => ref.read(authControllerProvider.notifier).signUp(
-                          context,
-                          email: _email.text,
-                          password: _password.text,
-                          displayName: _displayName.text,
-                          zip: _zip.text,
-                        ),
+                    : () {
+                        if (!_formKey.currentState!.validate()) {
+                          return;
+                        }
+                        ref.read(authControllerProvider.notifier).signUp(
+                              context,
+                              email: _email.text,
+                              password: _password.text,
+                              displayName: _displayName.text,
+                              zip: _zip.text,
+                            );
+                      },
                 child: isLoading
                     ? const SizedBox(
                         height: 20,
