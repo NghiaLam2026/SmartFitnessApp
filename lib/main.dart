@@ -1,29 +1,8 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'core/supabase/supabase_client.dart';
-import 'features/auth/presentation/login_page.dart';
-import 'features/auth/presentation/signup_page.dart';
-import 'features/auth/presentation/forgot_password_page.dart';
-import 'features/home/presentation/home_page.dart';
-import 'features/recipes/presentation/recipe_library_page.dart';
-import 'features/recipes/presentation/recipe_detail_page.dart';
-import 'features/profile/presentation/profile_page.dart';
-
-class GoRouterRefreshStream extends ChangeNotifier {
-  GoRouterRefreshStream(Stream<dynamic> stream) {
-    _subscription = stream.listen((_) => notifyListeners());
-  }
-
-  late final StreamSubscription<dynamic> _subscription;
-
-  @override
-  void dispose() {
-    _subscription.cancel();
-    super.dispose();
-  }
-}
+import 'app/router.dart';
+import 'app/theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,131 +10,18 @@ Future<void> main() async {
   runApp(const ProviderScope(child: SmartFitnessApp()));
 }
 
-final _router = GoRouter(
-  initialLocation: '/login',
-  refreshListenable: GoRouterRefreshStream(supabase.auth.onAuthStateChange),
-  redirect: (context, state) {
-    final bool isLoggedIn = supabase.auth.currentUser != null;
-    final String location = state.matchedLocation;
-    final params = state.uri.queryParameters;
-    final justSignedUp = params['justSignedUp'] == '1';
-
-    final bool isLoginRoute = location == '/login';
-    if (!isLoggedIn && location == '/home') return '/login';
-    if (isLoggedIn && isLoginRoute && !justSignedUp) return '/home';
-    return null;
-  },
-  routes: [
-    GoRoute(
-      path: '/login',
-      builder: (context, state) => const LoginPage(),
-    ),
-    GoRoute(
-      path: '/forgot-password',
-      builder: (context, state) => const ForgotPasswordPage(),
-    ),
-    GoRoute(
-      path: '/signup',
-      builder: (context, state) => const SignupPage(),
-    ),
-    GoRoute(
-      path: '/home',
-      builder: (context, state) => const HomePage(),
-      routes: [
-        GoRoute(
-          path: 'recipes',
-          builder: (context, state) => const RecipeLibraryPage(),
-          routes: [
-            GoRoute(
-              path: 'detail',
-              builder: (context, state) {
-                final id = (state.extra as String?) ?? '';
-                return RecipeDetailPage(recipeId: id);
-              },
-            ),
-          ],
-        ),
-      ],
-    ),
-    GoRoute(
-      path: '/profile',
-      builder: (context, state) => const ProfilePage(),
-    ),
-  ],
-);
-
-class SmartFitnessApp extends StatelessWidget {
+class SmartFitnessApp extends ConsumerWidget {
   const SmartFitnessApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(routerProvider);
+    
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       title: 'Smart Fitness',
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF007AFF), // Apple blue
-          brightness: Brightness.light,
-        ),
-        scaffoldBackgroundColor: const Color(0xFFF2F2F7), // iOS background
-        cardTheme: CardThemeData(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          color: Colors.white,
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: const Color(0xFFF2F2F7),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFF007AFF), width: 2),
-          ),
-          errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.red, width: 1),
-          ),
-          focusedErrorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.red, width: 2),
-          ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        ),
-        filledButtonTheme: FilledButtonThemeData(
-          style: FilledButton.styleFrom(
-            minimumSize: const Size.fromHeight(54),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            textStyle: const TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
-              letterSpacing: -0.4,
-            ),
-          ),
-        ),
-        textButtonTheme: TextButtonThemeData(
-          style: TextButton.styleFrom(
-            textStyle: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              letterSpacing: -0.4,
-              inherit: true,
-            ),
-          ),
-        ),
-      ),
-      routerConfig: _router,
+      theme: appTheme,
+      routerConfig: router,
     );
   }
 }

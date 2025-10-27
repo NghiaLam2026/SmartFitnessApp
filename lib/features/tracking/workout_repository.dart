@@ -34,5 +34,4 @@ class WorkoutRepository {
       .order('date', ascending: false);
     return List<Map<String, dynamic>>.from(response);
   }
-
 }
