@@ -96,6 +96,7 @@ class Recipe {
   final RecipeMacros macros;
   final List<IngredientItem> ingredients;
   final String? instructions;
+  final String? imageUrl;
 
   const Recipe({
     required this.id,
@@ -105,6 +106,7 @@ class Recipe {
     required this.macros,
     required this.ingredients,
     required this.instructions,
+    this.imageUrl,
   });
 
   bool get hasNutrition => calories != null && macros.isComplete;
@@ -134,6 +136,7 @@ class Recipe {
       macros: RecipeMacros.fromMap(map['macros'] as Map<String, dynamic>?),
       ingredients: ing,
       instructions: (map['instructions'] as String?)?.trim(),
+      imageUrl: (map['img_url'] as String?)?.trim(),
     );
   }
 

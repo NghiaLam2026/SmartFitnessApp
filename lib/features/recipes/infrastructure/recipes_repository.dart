@@ -33,7 +33,7 @@ class SupabaseRecipesRepository implements RecipesRepository {
     if (onlyIds != null && onlyIds.isEmpty) {
       return <Recipe>[];
     }
-    dynamic qb = _client.from('recipes').select('id, title, purpose, calories, macros, ingredients, instructions');
+    dynamic qb = _client.from('recipes').select('id, title, purpose, calories, macros, ingredients, instructions, img_url');
     if (onlyIds != null && onlyIds.isNotEmpty) qb = qb.in_('id', onlyIds.toList());
     if (purpose != null) qb = qb.eq('purpose', purpose.apiValue);
     if (search != null && search.trim().isNotEmpty) {
@@ -62,7 +62,7 @@ class SupabaseRecipesRepository implements RecipesRepository {
         final orExpr = onlyIds.map((id) => 'id.eq.$id').join(',');
         final alt = await _client
             .from('recipes')
-            .select('id, title, purpose, calories, macros, ingredients, instructions')
+            .select('id, title, purpose, calories, macros, ingredients, instructions, img_url')
             .or(orExpr)
             .order('title')
             .range(offset, offset + limit - 1);
@@ -77,7 +77,7 @@ class SupabaseRecipesRepository implements RecipesRepository {
   Future<List<Recipe>> fetchFavoriteRecipes({required String userId, String? search, int limit = 50, int offset = 0}) async {
     dynamic qb = _client
         .from('recipes')
-        .select('id, title, purpose, calories, macros, ingredients, instructions, user_saved_recipes!inner (user_id)')
+        .select('id, title, purpose, calories, macros, ingredients, instructions, img_url, user_saved_recipes!inner (user_id)')
         .eq('user_saved_recipes.user_id', userId);
     if (search != null && search.trim().isNotEmpty) {
       final term = search.trim();
@@ -94,7 +94,7 @@ class SupabaseRecipesRepository implements RecipesRepository {
   Future<Recipe?> fetchRecipeById(String id) async {
     final row = await _client
         .from('recipes')
-        .select('id, title, purpose, calories, macros, ingredients, instructions')
+        .select('id, title, purpose, calories, macros, ingredients, instructions, img_url')
         .eq('id', id)
         .maybeSingle();
     if (row == null) return null;

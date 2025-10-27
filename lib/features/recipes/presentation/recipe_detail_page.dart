@@ -75,83 +75,122 @@ class _RecipeDetailBody extends StatelessWidget {
     final theme = Theme.of(context);
     return SafeArea(
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(recipe.title, style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        Chip(label: Text(recipe.purpose.label)),
-                        const SizedBox(width: 8),
-                        if (!recipe.hasNutrition)
-                          Chip(label: const Text('Incomplete nutrition'), avatar: const Icon(Icons.info_outline_rounded, size: 18)),
-                      ],
-                    ),
-                  ],
+          // Hero Image
+          if (recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty)
+            SizedBox(
+              height: 240,
+              width: double.infinity,
+              child: Image.network(
+                recipe.imageUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  height: 240,
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  child: Icon(Icons.image_not_supported_rounded, size: 64, color: theme.colorScheme.onSurface.withOpacity(0.3)),
                 ),
-              ),
-              if (saved) const Icon(Icons.bookmark_rounded, color: Colors.amber)
-            ],
-          ),
-
-          const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  const Icon(Icons.local_fire_department_rounded),
-                  const SizedBox(width: 8),
-                  Text(recipe.calories != null ? '${recipe.calories!.toStringAsFixed(recipe.calories! % 1 == 0 ? 0 : 0)} kcal' : '— kcal'),
-                  const Spacer(),
-                  _MacroBadge(label: 'P', value: recipe.macros.protein),
-                  const SizedBox(width: 8),
-                  _MacroBadge(label: 'C', value: recipe.macros.carbs),
-                  const SizedBox(width: 8),
-                  _MacroBadge(label: 'F', value: recipe.macros.fat),
-                ],
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    height: 240,
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        value: loadingProgress.expectedTotalBytes != null
+                            ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                            : null,
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
-          ),
-
-          const SizedBox(height: 16),
-          Text('Ingredients', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 8),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  for (final ing in recipe.ingredients)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 6),
-                      child: Row(
+          
+          // Content
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(Icons.check_circle_outline_rounded, size: 18),
-                          const SizedBox(width: 8),
-                          Expanded(child: Text(_ingredientLine(ing))),
+                          Text(recipe.title, style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              Chip(label: Text(recipe.purpose.label)),
+                              const SizedBox(width: 8),
+                              if (!recipe.hasNutrition)
+                                Chip(label: const Text('Incomplete nutrition'), avatar: const Icon(Icons.info_outline_rounded, size: 18)),
+                            ],
+                          ),
                         ],
                       ),
                     ),
-                ],
-              ),
-            ),
-          ),
+                    if (saved) const Icon(Icons.bookmark_rounded, color: Colors.amber)
+                  ],
+                ),
 
-          const SizedBox(height: 16),
-          Text('Instructions', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 8),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text((recipe.instructions?.isNotEmpty == true) ? recipe.instructions! : 'No instructions available.'),
+                const SizedBox(height: 16),
+
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.local_fire_department_rounded),
+                        const SizedBox(width: 8),
+                        Text(recipe.calories != null ? '${recipe.calories!.toStringAsFixed(recipe.calories! % 1 == 0 ? 0 : 0)} kcal' : '— kcal'),
+                        const Spacer(),
+                        _MacroBadge(label: 'P', value: recipe.macros.protein),
+                        const SizedBox(width: 8),
+                        _MacroBadge(label: 'C', value: recipe.macros.carbs),
+                        const SizedBox(width: 8),
+                        _MacroBadge(label: 'F', value: recipe.macros.fat),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+                Text('Ingredients', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+                const SizedBox(height: 8),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        for (final ing in recipe.ingredients)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.check_circle_outline_rounded, size: 18),
+                                const SizedBox(width: 8),
+                                Expanded(child: Text(_ingredientLine(ing))),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+                Text('Instructions', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+                const SizedBox(height: 8),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text((recipe.instructions?.isNotEmpty == true) ? recipe.instructions! : 'No instructions available.'),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
