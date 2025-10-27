@@ -210,44 +210,80 @@ class _RecipeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Card(
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      recipe.title,
-                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-                    ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Image section
+            if (recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty)
+              SizedBox(
+                height: 160,
+                width: double.infinity,
+                child: Image.network(
+                  recipe.imageUrl!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    height: 160,
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    child: Icon(Icons.image_not_supported_rounded, size: 48, color: theme.colorScheme.onSurface.withOpacity(0.3)),
                   ),
-                  if (saved) const Icon(Icons.bookmark_rounded, color: Colors.amber)
-                ],
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Container(
+                      height: 160,
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          value: loadingProgress.expectedTotalBytes != null
+                              ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                              : null,
+                        ),
+                      ),
+                    );
+                  },
+                ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                recipe.purpose.label,
-                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.7)),
-              ),
-              const SizedBox(height: 8),
-              Row(
+            // Content section
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.local_fire_department_rounded, size: 18),
-                  const SizedBox(width: 6),
-                  Text(recipe.calories != null ? '${recipe.calories!.toStringAsFixed(recipe.calories! % 1 == 0 ? 0 : 0)} kcal' : '— kcal'),
-                  const SizedBox(width: 12),
-                  const Icon(Icons.restaurant_menu_rounded, size: 18),
-                  const SizedBox(width: 6),
-                  Text('${recipe.ingredients.length} ingredients'),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          recipe.title,
+                          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                      if (saved) const Icon(Icons.bookmark_rounded, color: Colors.amber)
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    recipe.purpose.label,
+                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.7)),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(Icons.local_fire_department_rounded, size: 18),
+                      const SizedBox(width: 6),
+                      Text(recipe.calories != null ? '${recipe.calories!.toStringAsFixed(recipe.calories! % 1 == 0 ? 0 : 0)} kcal' : '— kcal'),
+                      const SizedBox(width: 12),
+                      const Icon(Icons.restaurant_menu_rounded, size: 18),
+                      const SizedBox(width: 6),
+                      Text('${recipe.ingredients.length} ingredients'),
+                    ],
+                  ),
                 ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
