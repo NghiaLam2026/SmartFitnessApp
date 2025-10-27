@@ -37,6 +37,11 @@ dependencies:
   flutter_secure_storage: ^9.0.0
   dio: ^5.4.0
   pedometer: ^3.0.0
+  video_player: ^2.9.2
+  chewie: ^1.8.5
+  webview_flutter: ^4.10.0
+  url_launcher: ^6.3.0
+  youtube_player_flutter: ^9.1.0
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.

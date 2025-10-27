@@ -141,6 +141,26 @@ class _QuickActions extends StatelessWidget {
             textStyle: const TextStyle(fontWeight: FontWeight.w600),
           ),
         ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          onPressed: () => context.push('/home/exercises'),
+          icon: const Icon(Icons.fitness_center_rounded, size: 18),
+          label: const Text('Exercises'),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            textStyle: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+        ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          onPressed: () => context.push('/home/injury'),
+          icon: const Icon(Icons.health_and_safety_rounded, size: 18),
+          label: const Text('Injury Prevention'),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            textStyle: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+        ),
       ],
     );
   }
