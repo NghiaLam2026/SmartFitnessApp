@@ -112,9 +112,9 @@ class _QuickActions extends StatelessWidget {
           children: [
             Expanded(
               child: FilledButton.icon(
-                onPressed: () {},
+                onPressed: () => context.push('/home/workouts'),
                 icon: const Icon(Icons.flash_on_rounded),
-                label: const Text('Start Workout'),
+                label: const Text('My Workouts'),
               ),
             ),
             const SizedBox(width: 12),
