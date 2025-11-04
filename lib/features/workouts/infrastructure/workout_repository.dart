@@ -217,7 +217,6 @@ class SupabaseWorkoutRepository implements WorkoutRepository {
         'order_index': exercise.orderIndex,
         'target_reps': set.reps,
         'target_weight': set.weight,
-        'target_time_sec': set.durationSeconds,
       };
       
       // Only add workout_exercise_id if we have it (new structure)
@@ -279,7 +278,6 @@ class SupabaseWorkoutRepository implements WorkoutRepository {
             'order_index': exercise.orderIndex,
             'target_reps': set.reps,
             'target_weight': set.weight,
-            'target_time_sec': set.durationSeconds,
           });
     }
   }
@@ -317,7 +315,6 @@ class SupabaseWorkoutRepository implements WorkoutRepository {
             workoutExerciseId: workoutExerciseId,
             reps: setMap['target_reps'] as int?,
             weight: (setMap['target_weight'] as num?)?.toDouble(),
-            durationSeconds: setMap['target_time_sec'] as int?,
             isCompleted: false,
           );
         }).toList();
@@ -409,7 +406,6 @@ class SupabaseWorkoutRepository implements WorkoutRepository {
           workoutExerciseId: exerciseId, // Using exercise_id as workoutExerciseId
           reps: setMap['target_reps'] as int?,
           weight: (setMap['target_weight'] as num?)?.toDouble(),
-          durationSeconds: setMap['target_time_sec'] as int?,
           isCompleted: false,
         );
       }).toList();
@@ -449,7 +445,6 @@ class SupabaseWorkoutRepository implements WorkoutRepository {
         workoutExerciseId: workoutExerciseId,
         reps: setMap['target_reps'] as int?,
         weight: (setMap['target_weight'] as num?)?.toDouble(),
-        durationSeconds: setMap['target_time_sec'] as int?,
         isCompleted: false,
       );
     }).toList();

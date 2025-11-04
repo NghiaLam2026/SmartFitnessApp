@@ -130,7 +130,6 @@ class ExerciseSet {
   final String workoutExerciseId;
   final int? reps;
   final double? weight;
-  final int? durationSeconds; // For time-based exercises (planks, etc.)
   final bool isCompleted;
 
   const ExerciseSet({
@@ -138,7 +137,6 @@ class ExerciseSet {
     required this.workoutExerciseId,
     this.reps,
     this.weight,
-    this.durationSeconds,
     this.isCompleted = false,
   });
 
@@ -148,7 +146,6 @@ class ExerciseSet {
       workoutExerciseId: map['workout_exercise_id'] as String? ?? '',
       reps: map['reps'] as int?,
       weight: map['weight'] as double?,
-      durationSeconds: map['duration_seconds'] as int?,
       isCompleted: (map['is_completed'] as bool?) ?? false,
     );
   }
@@ -159,7 +156,6 @@ class ExerciseSet {
       'workout_exercise_id': workoutExerciseId,
       'reps': reps,
       'weight': weight,
-      'duration_seconds': durationSeconds,
       'is_completed': isCompleted,
     };
   }
@@ -169,7 +165,6 @@ class ExerciseSet {
     String? workoutExerciseId,
     int? reps,
     double? weight,
-    int? durationSeconds,
     bool? isCompleted,
   }) {
     return ExerciseSet(
@@ -177,7 +172,6 @@ class ExerciseSet {
       workoutExerciseId: workoutExerciseId ?? this.workoutExerciseId,
       reps: reps ?? this.reps,
       weight: weight ?? this.weight,
-      durationSeconds: durationSeconds ?? this.durationSeconds,
       isCompleted: isCompleted ?? this.isCompleted,
     );
   }

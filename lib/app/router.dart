@@ -136,13 +136,13 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: 'ai',
                 builder: (context, state) => const AIWorkoutPage(),
               ),
-              GoRoute(
-                path: ':id',
-                builder: (context, state) {
-                  final id = state.pathParameters['id'] ?? '';
-                  return WorkoutDetailPage(workoutId: id);
-                },
-              ),
+           GoRoute(
+             path: ':id',
+             builder: (context, state) {
+               final id = state.pathParameters['id'] ?? '';
+               return WorkoutDetailPage(workoutId: id);
+             },
+           ),
             ],
           ),
         ],

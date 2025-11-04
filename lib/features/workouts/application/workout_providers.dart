@@ -3,6 +3,7 @@ import '../domain/workout_models.dart';
 import '../infrastructure/workout_repository.dart';
 import '../infrastructure/ai_workout_service.dart';
 import '../../../core/supabase/supabase_client.dart';
+import '../../../core/constants/app_constants.dart';
 
 // Repository providers
 final workoutRepositoryProvider = Provider<WorkoutRepository>((ref) {
@@ -10,12 +11,15 @@ final workoutRepositoryProvider = Provider<WorkoutRepository>((ref) {
 });
 
 final aiWorkoutServiceProvider = Provider<AIWorkoutService>((ref) {
-  // Use mock service for now - replace with real service when backend is ready
-  return MockAIWorkoutService();
-  // return GeminiAIWorkoutService(
-  //   apiKey: 'YOUR_GEMINI_API_KEY',
-  //   baseUrl: 'YOUR_NODE_BACKEND_URL',
-  // );
+  // Use the Node.js backend with Gemini
+  // The backend URL can be configured via --dart-define=AI_WORKOUT_BACKEND_URL=...
+  // or set in the environment variable
+  return GeminiAIWorkoutService(
+    apiKey: '', // Not needed - handled by backend
+    baseUrl: AppConstants.aiWorkoutBackendUrl,
+  );
+  // For testing without backend, uncomment:
+  // return MockAIWorkoutService();
 });
 
 // User workout plans provider

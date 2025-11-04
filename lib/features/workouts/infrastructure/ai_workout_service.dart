@@ -23,21 +23,38 @@ class GeminiAIWorkoutService implements AIWorkoutService {
     List<Exercise> availableExercises,
   ) async {
     try {
-      // Create a context with available exercises
-      final systemPrompt = _createSystemPrompt(availableExercises);
-      final fullMessage = '$systemPrompt\n\nUser Request: $userMessage';
+      // Format exercises for backend
+      final exercisesData = availableExercises
+          .take(100) // Limit to 100 exercises to avoid token limits
+          .map((e) => {
+                'id': e.id,
+                'name': e.name,
+                'muscle': e.muscle,
+                'equipment': e.equipment ?? 'none',
+              })
+          .toList();
+
+      print('🚀 Sending request to: $baseUrl/generate-workout');
+      print('📝 Message: $userMessage');
+      print('💪 Exercises count: ${exercisesData.length}');
 
       final response = await _dio.post(
         '$baseUrl/generate-workout',
         data: {
-          'message': fullMessage,
+          'message': userMessage,
+          'exercises': exercisesData,
         },
         options: Options(
           headers: {
             'Content-Type': 'application/json',
           },
+          receiveTimeout: const Duration(seconds: 60), // Increase timeout for AI generation
+          sendTimeout: const Duration(seconds: 30),
         ),
       );
+
+      print('✅ Response status: ${response.statusCode}');
+      print('📦 Response data: ${response.data}');
 
       if (response.statusCode == 200) {
         final data = response.data as Map<String, dynamic>;
@@ -46,6 +63,7 @@ class GeminiAIWorkoutService implements AIWorkoutService {
         // Try to parse multiple workouts first
         final workoutsData = data['workouts'] as List?;
         if (workoutsData != null && workoutsData.isNotEmpty) {
+          print('🎯 Found ${workoutsData.length} workouts');
           final plans = workoutsData
               .map((workoutData) => _parseAIPlan(workoutData as Map<String, dynamic>))
               .toList();
@@ -59,118 +77,121 @@ class GeminiAIWorkoutService implements AIWorkoutService {
           return AIGeneratedWorkout(message: message, plans: [plan]);
         }
 
-        return AIGeneratedWorkout(message: message);
+        print('⚠️ No workouts found in response');
+        return AIGeneratedWorkout(
+          message: 'No workouts generated. Please try again with different specifications.',
+        );
       }
 
-      throw Exception('Failed to generate workout: ${response.statusCode}');
-    } catch (e) {
+      throw Exception('Failed to generate workout: HTTP ${response.statusCode}');
+    } on DioException catch (e) {
+      // Handle Dio-specific errors
+      String errorMessage = 'Failed to generate workout. ';
+      
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        errorMessage += 'Request timed out. Please check your connection and try again.';
+      } else if (e.type == DioExceptionType.connectionError) {
+        errorMessage += 'Could not connect to server. Please ensure the backend is running at $baseUrl';
+      } else if (e.response != null) {
+        errorMessage += 'Server error (${e.response?.statusCode}): ${e.response?.data}';
+      } else {
+        errorMessage += 'Network error: ${e.message}';
+      }
+      
+      print('❌ Dio Error: ${e.type}');
+      print('❌ Error message: ${e.message}');
+      print('❌ Response: ${e.response?.data}');
+      
+      return AIGeneratedWorkout(message: errorMessage);
+    } catch (e, stackTrace) {
+      print('❌ Unexpected error: $e');
+      print('❌ Stack trace: $stackTrace');
+      
       return AIGeneratedWorkout(
-        message: 'Failed to generate workout. Please try again or create a workout manually.',
+        message: 'Failed to generate workout: ${e.toString()}. Please try again or create a workout manually.',
       );
     }
   }
 
-  String _createSystemPrompt(List<Exercise> availableExercises) {
-    final exercisesInfo = availableExercises
-        .take(100) // Limit to 100 exercises to avoid token limits
-        .map((e) => '- ${e.name} (${e.muscle ?? "full body"})')
-        .join('\n');
-
-    return '''
-You are an expert fitness trainer. Generate personalized workout plans based on user requests.
-
-Available Exercises:
-$exercisesInfo
-
-IMPORTANT: You must generate EXACTLY 3 different workout plans. Each plan should offer variety in:
-- Exercise selection
-- Intensity level
-- Workout structure
-- Focus areas
-
-Generate workouts in the following JSON format:
-{
-  "workouts": [
-    {
-      "title": "Workout Title 1",
-      "description": "Brief description",
-      "exercises": [
-        {
-          "exerciseId": "exercise_uuid",
-          "exerciseName": "Exercise Name",
-          "orderIndex": 0,
-          "restSeconds": 60,
-          "sets": [
-            {"reps": 10, "weight": null, "durationSeconds": null}
-          ]
-        }
-      ]
-    },
-    {
-      "title": "Workout Title 2",
-      "description": "Brief description",
-      "exercises": [...]
-    },
-    {
-      "title": "Workout Title 3",
-      "description": "Brief description",
-      "exercises": [...]
-    }
-  ]
-}
-
-Guidelines:
-- Provide 3-8 exercises per workout
-- Set appropriate reps (typically 8-15 for strength, 15-20 for endurance)
-- Include rest periods between sets (30-180 seconds)
-- Match exercise selection to user's goals and fitness level
-- Use exercises from the available list
-- Make each of the 3 workouts unique and offer different approaches
-
-User Request:''';
-  }
 
   WorkoutPlan _parseAIPlan(Map<String, dynamic> planData) {
-    // This would parse the AI response into a WorkoutPlan
-    // For now, returning a placeholder
-    // In production, you'd want robust JSON parsing with error handling
-    
-    final exercisesData = planData['exercises'] as List?;
-    final exercises = <WorkoutExercise>[];
+    try {
+      final exercisesData = planData['exercises'] as List?;
+      final exercises = <WorkoutExercise>[];
 
-    for (int i = 0; i < (exercisesData?.length ?? 0); i++) {
-      final exData = exercisesData![i] as Map<String, dynamic>;
-      final setsData = exData['sets'] as List?;
-      final sets = (setsData ?? [])
-          .map((s) => ExerciseSet(
-                id: '', // Will be generated by database
-                workoutExerciseId: '',
-                reps: s['reps'] as int?,
-                weight: s['weight'] as double?,
-                durationSeconds: s['durationSeconds'] as int?,
-              ))
-          .toList();
+      if (exercisesData == null || exercisesData.isEmpty) {
+        print('⚠️ No exercises found in workout plan');
+        return WorkoutPlan(
+          id: '',
+          title: planData['title'] as String? ?? 'AI Generated Workout',
+          description: planData['description'] as String?,
+          userId: '',
+          createdAt: DateTime.now(),
+          isAIGenerated: true,
+          exercises: [],
+        );
+      }
 
-      exercises.add(WorkoutExercise(
-        id: '', // Will be generated by database
-        workoutPlanId: '',
-        exerciseId: exData['exerciseId'] as String? ?? '',
-        exerciseName: exData['exerciseName'] as String? ?? 'Exercise',
-        orderIndex: i,
-        sets: sets,
-        restSeconds: exData['restSeconds'] as int? ?? 60,
-      ));
+      for (int i = 0; i < exercisesData.length; i++) {
+        try {
+          final exData = exercisesData[i] as Map<String, dynamic>;
+          final setsData = exData['sets'] as List?;
+          
+          if (setsData == null || setsData.isEmpty) {
+            print('⚠️ Exercise ${exData['exerciseName']} has no sets, skipping');
+            continue;
+          }
+
+          final sets = setsData
+              .map((s) {
+                final setMap = s as Map<String, dynamic>;
+                    return ExerciseSet(
+                      id: '', // Will be generated by database
+                      workoutExerciseId: '',
+                      reps: setMap['reps'] as int?,
+                      weight: (setMap['weight'] as num?)?.toDouble(),
+                    );
+              })
+              .toList();
+
+          final exerciseId = exData['exerciseId'] as String? ?? '';
+          final exerciseName = exData['exerciseName'] as String? ?? 'Exercise';
+          final orderIndex = exData['orderIndex'] as int? ?? i;
+          final restSeconds = exData['restSeconds'] as int? ?? 60;
+
+          exercises.add(WorkoutExercise(
+            id: '', // Will be generated by database
+            workoutPlanId: '',
+            exerciseId: exerciseId,
+            exerciseName: exerciseName,
+            orderIndex: orderIndex,
+            sets: sets,
+            restSeconds: restSeconds,
+          ));
+        } catch (e) {
+          print('⚠️ Error parsing exercise at index $i: $e');
+          // Continue with next exercise
+          continue;
+        }
+      }
+
+      return WorkoutPlan(
+        id: '', // Will be generated
+        title: planData['title'] as String? ?? 'AI Generated Workout',
+        description: planData['description'] as String?,
+        userId: '', // Will be set by the repository
+        createdAt: DateTime.now(),
+        isAIGenerated: true,
+        exercises: exercises,
+      );
+    } catch (e, stackTrace) {
+      print('❌ Error parsing workout plan: $e');
+      print('❌ Stack trace: $stackTrace');
+      print('❌ Plan data: $planData');
+      rethrow;
     }
-
-    return WorkoutPlan(
-      id: '', // Will be generated
-      title: planData['title'] as String? ?? 'AI Generated Workout',
-      description: planData['description'] as String?,
-      userId: '', // Will be set by the repository
-      createdAt: DateTime.now(),
-      isAIGenerated: true,
-      exercises: exercises,
-    );
   }
 }
 

@@ -235,16 +235,15 @@ class _WorkoutDetailContent extends StatelessWidget {
                   ),
                 ),
               ),
-            )
-          else
-            ...plan.exercises.asMap().entries.map((entry) {
-              final index = entry.key;
-              final exercise = entry.value;
-              return _ExerciseCard(
-                exercise: exercise,
-                exerciseNumber: index + 1,
-              );
-            }),
+            ),
+          ...plan.exercises.asMap().entries.map((entry) {
+            final index = entry.key;
+            final exercise = entry.value;
+            return _ExerciseCard(
+              exercise: exercise,
+              exerciseNumber: index + 1,
+            );
+          }),
         ],
       ),
     );
@@ -400,12 +399,6 @@ class _ExerciseCard extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 16),
                               ],
-                              if (set.durationSeconds != null) ...[
-                                _SetInfo(
-                                  icon: Icons.timer_rounded,
-                                  label: '${set.durationSeconds}s',
-                                ),
-                              ],
                             ],
                           ),
                         ),
@@ -426,7 +419,10 @@ class _SetInfo extends StatelessWidget {
   final IconData icon;
   final String label;
 
-  const _SetInfo({required this.icon, required this.label});
+  const _SetInfo({
+    required this.icon,
+    required this.label,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -436,10 +432,10 @@ class _SetInfo extends StatelessWidget {
       children: [
         Icon(icon, size: 16, color: theme.colorScheme.onSurfaceVariant),
         const SizedBox(width: 4),
-        Text(
-          label,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
+        Flexible(
+          child: Text(
+            label,
+            style: theme.textTheme.bodyMedium,
           ),
         ),
       ],
