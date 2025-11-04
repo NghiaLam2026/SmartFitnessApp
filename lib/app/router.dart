@@ -16,6 +16,10 @@ import '../features/injury/presentation/injury_player_page.dart';
 import '../features/exercises/presentation/exercise_library_page.dart';
 import '../features/exercises/presentation/exercise_detail_page.dart';
 import '../features/tracking/mock_test_tracker_screen.dart';
+import '../features/workouts/presentation/workout_library_page.dart';
+import '../features/workouts/presentation/create_workout_page.dart';
+import '../features/workouts/presentation/ai_workout_page.dart';
+import '../features/workouts/presentation/workout_detail_page.dart';
 
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
@@ -111,6 +115,34 @@ final routerProvider = Provider<GoRouter>((ref) {
                   return InjuryPlayerPage(protocolId: id);
                 },
               ),
+            ],
+          ),
+          GoRoute(
+            path: 'workouts',
+            builder: (context, state) => const WorkoutLibraryPage(),
+            routes: [
+              GoRoute(
+                path: 'create',
+                builder: (context, state) => const CreateWorkoutPage(),
+              ),
+              GoRoute(
+                path: 'edit/:id',
+                builder: (context, state) {
+                  final id = state.pathParameters['id'] ?? '';
+                  return CreateWorkoutPage(workoutId: id);
+                },
+              ),
+              GoRoute(
+                path: 'ai',
+                builder: (context, state) => const AIWorkoutPage(),
+              ),
+           GoRoute(
+             path: ':id',
+             builder: (context, state) {
+               final id = state.pathParameters['id'] ?? '';
+               return WorkoutDetailPage(workoutId: id);
+             },
+           ),
             ],
           ),
         ],

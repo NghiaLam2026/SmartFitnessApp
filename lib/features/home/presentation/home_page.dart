@@ -108,28 +108,13 @@ class _QuickActions extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: FilledButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.flash_on_rounded),
-                label: const Text('Start Workout'),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.calendar_today_rounded, size: 18),
-                label: const Text('My Plan'),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-                  textStyle: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-              ),
-            ),
-          ],
+        FilledButton.icon(
+          onPressed: () => context.push('/home/workouts'),
+          icon: const Icon(Icons.flash_on_rounded),
+          label: const Text('My Workouts'),
+          style: FilledButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+          ),
         ),
         const SizedBox(height: 12),
         OutlinedButton.icon(

@@ -9,6 +9,7 @@ class Exercise {
   final String? thumbnailUrl;
   final String? videoUrl;
   final String? instructions;
+  final bool isPrevention; // true if this is an injury prevention/rehabilitation exercise
 
   const Exercise({
     required this.id,
@@ -18,6 +19,7 @@ class Exercise {
     this.thumbnailUrl,
     this.videoUrl,
     this.instructions,
+    this.isPrevention = false,
   });
 
   factory Exercise.fromMap(Map<String, dynamic> map) {
@@ -29,6 +31,7 @@ class Exercise {
       thumbnailUrl: (map['thumbnail_url'] as String?)?.trim(),
       videoUrl: (map['video_url'] as String?)?.trim(),
       instructions: (map['instructions'] as String?)?.trim(),
+      isPrevention: (map['is_prevention'] as bool?) ?? false,
     );
   }
 }
