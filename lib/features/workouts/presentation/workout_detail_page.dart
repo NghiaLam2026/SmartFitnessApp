@@ -4,6 +4,24 @@ import 'package:go_router/go_router.dart';
 import '../application/workout_providers.dart';
 import '../domain/workout_models.dart';
 
+/// Helper function to extract weight unit from workout exercise notes
+String _getWeightUnit(WorkoutExercise exercise) {
+  if (exercise.notes != null) {
+    final unitMatch = RegExp(r'__weight_unit:([a-z]+)__').firstMatch(exercise.notes!);
+    if (unitMatch != null) {
+      return unitMatch.group(1) ?? 'kg';
+    }
+  }
+  return 'kg'; // Default to kg if not found
+}
+
+/// Helper function to get clean notes (without weight unit marker)
+String? _getCleanNotes(WorkoutExercise exercise) {
+  if (exercise.notes == null || exercise.notes!.isEmpty) return null;
+  final cleanNotes = exercise.notes!.replaceAll(RegExp(r'__weight_unit:[a-z]+__\s*'), '').trim();
+  return cleanNotes.isEmpty ? null : cleanNotes;
+}
+
 class WorkoutDetailPage extends ConsumerWidget {
   final String workoutId;
 
@@ -306,7 +324,7 @@ class _ExerciseCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (exercise.notes != null && exercise.notes!.isNotEmpty) ...[
+                if (_getCleanNotes(exercise) != null) ...[
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
@@ -323,7 +341,7 @@ class _ExerciseCard extends StatelessWidget {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            exercise.notes!,
+                            _getCleanNotes(exercise)!,
                             style: theme.textTheme.bodySmall,
                           ),
                         ),
@@ -378,7 +396,7 @@ class _ExerciseCard extends StatelessWidget {
                               if (set.weight != null) ...[
                                 _SetInfo(
                                   icon: Icons.scale_rounded,
-                                  label: '${set.weight!.toStringAsFixed(1)} kg',
+                                  label: '${set.weight!.toStringAsFixed(1)} ${_getWeightUnit(exercise)}',
                                 ),
                                 const SizedBox(width: 16),
                               ],

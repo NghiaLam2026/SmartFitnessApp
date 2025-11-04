@@ -10,9 +10,28 @@ import '../../exercises/infrastructure/exercises_repository.dart';
 
 final uuid = Uuid();
 
-// Constants for weight conversion
-const double _lbsToKg = 0.453592;
-const double _kgToLbs = 1 / _lbsToKg;
+// Weight conversion constants removed - weights are now stored as entered by user
+
+/// Helper function to extract weight unit from workout exercise notes
+String _getWeightUnit(WorkoutExercise exercise) {
+  if (exercise.notes != null) {
+    final unitMatch = RegExp(r'__weight_unit:([a-z]+)__').firstMatch(exercise.notes!);
+    if (unitMatch != null) {
+      return unitMatch.group(1) ?? 'kg';
+    }
+  }
+  return 'kg'; // Default to kg if not found
+}
+
+/// Helper function to get weight display text with unit
+String _getWeightDisplayText(WorkoutExercise exercise) {
+  if (exercise.sets.isEmpty || exercise.sets.first.weight == null || exercise.sets.first.weight! <= 0) {
+    return '';
+  }
+  final weight = exercise.sets.first.weight!.toStringAsFixed(1);
+  final unit = _getWeightUnit(exercise);
+  return '$weight $unit';
+}
 
 class CreateWorkoutPage extends ConsumerStatefulWidget {
   final String? workoutId; // If provided, edit mode; otherwise create mode
@@ -196,14 +215,20 @@ class _CreateWorkoutPageState extends ConsumerState<CreateWorkoutPage> {
     final setsController = TextEditingController(text: workoutExercise.sets.length.toString());
     final restController = TextEditingController(text: workoutExercise.restSeconds.toString());
     
-    // Get weight - stored in kg, display in kg by default
+    // Get weight - display as stored (no unit assumption)
     final currentWeight = workoutExercise.sets.isNotEmpty ? workoutExercise.sets.first.weight : null;
     final weightController = TextEditingController(
       text: currentWeight != null ? currentWeight.toStringAsFixed(currentWeight % 1 == 0 ? 0 : 1) : '',
     );
     
-    // Declare weightUnit outside builder to persist across rebuilds
-    String weightUnit = 'kg'; // Default to kg (since we store in kg)
+    // Extract weight unit from notes if present, otherwise default to kg
+    String weightUnit = 'kg';
+    if (workoutExercise.notes != null) {
+      final unitMatch = RegExp(r'__weight_unit:([a-z]+)__').firstMatch(workoutExercise.notes!);
+      if (unitMatch != null) {
+        weightUnit = unitMatch.group(1) ?? 'kg';
+      }
+    }
 
     return showDialog<WorkoutExercise>(
       context: context,
@@ -278,28 +303,9 @@ class _CreateWorkoutPageState extends ConsumerState<CreateWorkoutPage> {
                         selected: {weightUnit},
                         onSelectionChanged: (Set<String> selection) {
                           setState(() {
-                            final newUnit = selection.first;
-                            final oldUnit = weightUnit;
-                            // Convert displayed weight when unit changes
-                            if (weightController.text.isNotEmpty) {
-                              final weightValue = double.tryParse(weightController.text.trim());
-                              if (weightValue != null) {
-                                if (oldUnit == 'kg' && newUnit == 'lbs') {
-                                  // Convert kg to lbs
-                                  final convertedValue = weightValue * _kgToLbs;
-                                  weightController.text = convertedValue.toStringAsFixed(
-                                    convertedValue % 1 == 0 ? 0 : 1,
-                                  );
-                                } else if (oldUnit == 'lbs' && newUnit == 'kg') {
-                                  // Convert lbs to kg
-                                  final convertedValue = weightValue * _lbsToKg;
-                                  weightController.text = convertedValue.toStringAsFixed(
-                                    convertedValue % 1 == 0 ? 0 : 1,
-                                  );
-                                }
-                              }
-                            }
-                            weightUnit = newUnit;
+                            // Just update the unit - no automatic conversion
+                            // User enters their own value in their preferred unit
+                            weightUnit = selection.first;
                           });
                         },
                       ),
@@ -353,7 +359,7 @@ class _CreateWorkoutPageState extends ConsumerState<CreateWorkoutPage> {
                   return;
                 }
                 
-                // Parse weight and convert to kg if needed
+                // Parse weight - store exactly as user entered (no conversion)
                 double? weight;
                 if (weightText.isNotEmpty) {
                   final weightValue = double.tryParse(weightText);
@@ -364,13 +370,18 @@ class _CreateWorkoutPageState extends ConsumerState<CreateWorkoutPage> {
                     return;
                   }
                   if (weightValue > 0) {
-                    // Convert lbs to kg if needed
-                    weight = weightUnit == 'lbs' ? weightValue * _lbsToKg : weightValue;
-                    // Round to 2 decimal places for precision
-                    weight = double.parse(weight.toStringAsFixed(2));
+                    // Store weight as entered by user - no conversion
+                    weight = double.parse(weightValue.toStringAsFixed(1));
                   }
                 }
 
+                // Extract user notes (remove weight unit marker if present)
+                final userNotes = workoutExercise.notes?.replaceAll(RegExp(r'__weight_unit:[a-z]+__\s*'), '').trim();
+                // Store weight unit in notes field (prefixed with special marker)
+                final notesWithUnit = userNotes != null && userNotes.isNotEmpty
+                    ? '__weight_unit:${weightUnit}__ $userNotes'
+                    : '__weight_unit:${weightUnit}__';
+                
                 final editedExercise = WorkoutExercise(
                   id: workoutExercise.id, // Keep the same ID
                   workoutPlanId: workoutExercise.workoutPlanId,
@@ -384,7 +395,7 @@ class _CreateWorkoutPageState extends ConsumerState<CreateWorkoutPage> {
                     weight: weight,
                   )),
                   restSeconds: rest,
-                  notes: workoutExercise.notes, // Preserve notes if any
+                  notes: notesWithUnit,
                 );
 
                 context.pop(editedExercise);
@@ -489,28 +500,9 @@ class _CreateWorkoutPageState extends ConsumerState<CreateWorkoutPage> {
                         selected: {weightUnit},
                         onSelectionChanged: (Set<String> selection) {
                           setState(() {
-                            final newUnit = selection.first;
-                            final oldUnit = weightUnit;
-                            // Convert displayed weight when unit changes
-                            if (weightController.text.isNotEmpty) {
-                              final weightValue = double.tryParse(weightController.text.trim());
-                              if (weightValue != null) {
-                                if (oldUnit == 'kg' && newUnit == 'lbs') {
-                                  // Convert kg to lbs
-                                  final convertedValue = weightValue * _kgToLbs;
-                                  weightController.text = convertedValue.toStringAsFixed(
-                                    convertedValue % 1 == 0 ? 0 : 1,
-                                  );
-                                } else if (oldUnit == 'lbs' && newUnit == 'kg') {
-                                  // Convert lbs to kg
-                                  final convertedValue = weightValue * _lbsToKg;
-                                  weightController.text = convertedValue.toStringAsFixed(
-                                    convertedValue % 1 == 0 ? 0 : 1,
-                                  );
-                                }
-                              }
-                            }
-                            weightUnit = newUnit;
+                            // Just update the unit - no automatic conversion
+                            // User enters their own value in their preferred unit
+                            weightUnit = selection.first;
                           });
                         },
                       ),
@@ -564,7 +556,7 @@ class _CreateWorkoutPageState extends ConsumerState<CreateWorkoutPage> {
                   return;
                 }
                 
-                // Parse weight and convert to kg if needed
+                // Parse weight - store exactly as user entered (no conversion)
                 double? weight;
                 if (weightText.isNotEmpty) {
                   final weightValue = double.tryParse(weightText);
@@ -575,13 +567,14 @@ class _CreateWorkoutPageState extends ConsumerState<CreateWorkoutPage> {
                     return;
                   }
                   if (weightValue > 0) {
-                    // Convert lbs to kg if needed
-                    weight = weightUnit == 'lbs' ? weightValue * _lbsToKg : weightValue;
-                    // Round to 2 decimal places for precision
-                    weight = double.parse(weight.toStringAsFixed(2));
+                    // Store weight as entered by user - no conversion
+                    weight = double.parse(weightValue.toStringAsFixed(1));
                   }
                 }
 
+              // Store weight unit in notes field (prefixed with special marker)
+              final notesWithUnit = '__weight_unit:${weightUnit}__';
+              
               final workoutExercise = WorkoutExercise(
                 id: uuid.v4(),
                 workoutPlanId: '', // Will be set when saving
@@ -595,6 +588,7 @@ class _CreateWorkoutPageState extends ConsumerState<CreateWorkoutPage> {
                     weight: weight,
                 )),
                 restSeconds: rest,
+                notes: notesWithUnit,
               );
 
               context.pop(workoutExercise);
@@ -754,10 +748,9 @@ class _ExerciseListItem extends StatelessWidget {
         subtitle: Text(
           [
             '${exercise.sets.length} sets × ${exercise.sets.first.reps ?? 0} reps',
-            if (exercise.sets.first.weight != null && exercise.sets.first.weight! > 0)
-              '${exercise.sets.first.weight!.toStringAsFixed(1)} kg',
+            _getWeightDisplayText(exercise),
             '${exercise.restSeconds}s rest',
-          ].join(' • '),
+          ].where((item) => item.isNotEmpty).join(' • '),
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
