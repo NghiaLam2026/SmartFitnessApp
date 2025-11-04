@@ -87,6 +87,10 @@ class WorkoutBuilderNotifier extends StateNotifier<WorkoutPlan?> {
     state = state!.copyWith(exercises: exercises);
   }
 
+  void loadWorkout(WorkoutPlan plan) {
+    state = plan;
+  }
+
   void clear() {
     state = null;
   }

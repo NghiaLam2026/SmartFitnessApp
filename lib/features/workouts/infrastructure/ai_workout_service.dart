@@ -41,12 +41,22 @@ class GeminiAIWorkoutService implements AIWorkoutService {
 
       if (response.statusCode == 200) {
         final data = response.data as Map<String, dynamic>;
-        final message = data['message'] as String? ?? 'Generated workout';
+        final message = data['message'] as String? ?? 'Generated workout plans';
+        
+        // Try to parse multiple workouts first
+        final workoutsData = data['workouts'] as List?;
+        if (workoutsData != null && workoutsData.isNotEmpty) {
+          final plans = workoutsData
+              .map((workoutData) => _parseAIPlan(workoutData as Map<String, dynamic>))
+              .toList();
+          return AIGeneratedWorkout(message: message, plans: plans);
+        }
+        
+        // Fallback to single plan for backward compatibility
         final planData = data['plan'] as Map<String, dynamic>?;
-
         if (planData != null) {
           final plan = _parseAIPlan(planData);
-          return AIGeneratedWorkout(message: message, plan: plan);
+          return AIGeneratedWorkout(message: message, plans: [plan]);
         }
 
         return AIGeneratedWorkout(message: message);
@@ -72,19 +82,39 @@ You are an expert fitness trainer. Generate personalized workout plans based on 
 Available Exercises:
 $exercisesInfo
 
+IMPORTANT: You must generate EXACTLY 3 different workout plans. Each plan should offer variety in:
+- Exercise selection
+- Intensity level
+- Workout structure
+- Focus areas
+
 Generate workouts in the following JSON format:
 {
-  "title": "Workout Title",
-  "description": "Brief description",
-  "exercises": [
+  "workouts": [
     {
-      "exerciseId": "exercise_uuid",
-      "exerciseName": "Exercise Name",
-      "orderIndex": 0,
-      "restSeconds": 60,
-      "sets": [
-        {"reps": 10, "weight": null, "durationSeconds": null}
+      "title": "Workout Title 1",
+      "description": "Brief description",
+      "exercises": [
+        {
+          "exerciseId": "exercise_uuid",
+          "exerciseName": "Exercise Name",
+          "orderIndex": 0,
+          "restSeconds": 60,
+          "sets": [
+            {"reps": 10, "weight": null, "durationSeconds": null}
+          ]
+        }
       ]
+    },
+    {
+      "title": "Workout Title 2",
+      "description": "Brief description",
+      "exercises": [...]
+    },
+    {
+      "title": "Workout Title 3",
+      "description": "Brief description",
+      "exercises": [...]
     }
   ]
 }
@@ -95,6 +125,7 @@ Guidelines:
 - Include rest periods between sets (30-180 seconds)
 - Match exercise selection to user's goals and fitness level
 - Use exercises from the available list
+- Make each of the 3 workouts unique and offer different approaches
 
 User Request:''';
   }
@@ -153,16 +184,34 @@ class MockAIWorkoutService implements AIWorkoutService {
     // Simulate network delay
     await Future.delayed(const Duration(seconds: 2));
 
-    // Return a mock workout
-    final plan = WorkoutPlan(
-      id: '',
-      title: 'AI Generated Workout',
-      description: 'Generated based on your request: $userMessage',
-      userId: '',
-      createdAt: DateTime.now(),
-      isAIGenerated: true,
-      exercises: availableExercises.take(5).toList().asMap().entries.map((entry) {
+    if (availableExercises.isEmpty) {
+      return const AIGeneratedWorkout(
+        message: 'No exercises available. Please ensure exercises are loaded.',
+      );
+    }
+
+    // Generate 3 different mock workout plans
+    final plans = <WorkoutPlan>[];
+    
+    for (int planIndex = 0; planIndex < 3; planIndex++) {
+      final exerciseCount = 5 + planIndex; // Vary exercise count (5, 6, 7)
+      final startIndex = planIndex * 5; // Start from different positions
+      
+      final exercises = availableExercises
+          .skip(startIndex)
+          .take(exerciseCount)
+          .toList();
+      
+      if (exercises.isEmpty) {
+        // If we run out of exercises, wrap around
+        exercises.addAll(availableExercises.take(exerciseCount));
+      }
+
+      final workoutExercises = exercises.asMap().entries.map((entry) {
         final exercise = entry.value;
+        final setsCount = 3 + (planIndex % 2); // Vary sets (3 or 4)
+        final reps = 10 + (planIndex * 2); // Vary reps (10, 12, 14)
+        
         return WorkoutExercise(
           id: '',
           workoutPlanId: '',
@@ -170,23 +219,73 @@ class MockAIWorkoutService implements AIWorkoutService {
           exerciseName: exercise.name,
           orderIndex: entry.key,
           sets: List.generate(
-            3,
+            setsCount,
             (i) => ExerciseSet(
               id: '',
               workoutExerciseId: '',
-              reps: 12,
+              reps: reps,
               weight: null,
             ),
           ),
-          restSeconds: 60,
+          restSeconds: 60 + (planIndex * 15), // Vary rest (60, 75, 90)
         );
-      }).toList(),
-    );
+      }).toList();
+
+      final plan = WorkoutPlan(
+        id: '',
+        title: _generateWorkoutTitle(planIndex, userMessage),
+        description: _generateWorkoutDescription(planIndex, userMessage),
+        userId: '',
+        createdAt: DateTime.now(),
+        isAIGenerated: true,
+        exercises: workoutExercises,
+      );
+      
+      plans.add(plan);
+    }
 
     return AIGeneratedWorkout(
-      message: 'I\'ve created a personalized workout plan based on your request!',
-      plan: plan,
+      message: 'I\'ve created 3 personalized workout plans based on your request!',
+      plans: plans,
     );
+  }
+
+  String _generateWorkoutTitle(int index, String userMessage) {
+    final titles = [
+      'Strength Focus Workout',
+      'Balanced Training Session',
+      'Endurance Builder',
+    ];
+    
+    if (index < titles.length) {
+      return titles[index];
+    }
+    
+    // Fallback: extract keywords from user message
+    final lowerMessage = userMessage.toLowerCase();
+    if (lowerMessage.contains('strength') || lowerMessage.contains('muscle')) {
+      return 'Strength Training Plan';
+    } else if (lowerMessage.contains('cardio') || lowerMessage.contains('endurance')) {
+      return 'Cardio Workout Plan';
+    } else if (lowerMessage.contains('full') || lowerMessage.contains('body')) {
+      return 'Full Body Workout';
+    }
+    
+    return 'Workout Plan ${index + 1}';
+  }
+
+  String _generateWorkoutDescription(int index, String userMessage) {
+    final descriptions = [
+      'A focused strength training session designed to build muscle and power.',
+      'A well-rounded workout that balances strength, endurance, and flexibility.',
+      'An endurance-focused session to improve cardiovascular fitness and stamina.',
+    ];
+    
+    if (index < descriptions.length) {
+      return '${descriptions[index]} Based on: $userMessage';
+    }
+    
+    return 'Generated based on your request: $userMessage';
   }
 }
 

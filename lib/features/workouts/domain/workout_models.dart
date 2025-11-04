@@ -187,11 +187,15 @@ class ExerciseSet {
 @immutable
 class AIGeneratedWorkout {
   final String message;
-  final WorkoutPlan? plan;
+  final List<WorkoutPlan> plans;
 
   const AIGeneratedWorkout({
     required this.message,
-    this.plan,
+    this.plans = const [],
   });
+
+  /// Legacy support for single plan (returns first plan if available)
+  @Deprecated('Use plans instead')
+  WorkoutPlan? get plan => plans.isNotEmpty ? plans.first : null;
 }
 
