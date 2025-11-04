@@ -177,8 +177,6 @@ For more details, see [Backend README](backend/README.md).
 
 ## 🌐 Contributing
 
-Choose the path that matches your access level.
-
 ### Team members (have write access) – clone
 ```bash
 git clone <repo-url>
