@@ -88,7 +88,7 @@ final recipeDetailProvider = FutureProvider.family.autoDispose<Recipe?, String>(
 
 final toggleSavedRecipeProvider = FutureProvider.family.autoDispose<bool, String>((ref, recipeId) async {
   final user = supabase.auth.currentUser;
-  if (user == null) throw const AuthException('Not logged in');
+  if (user == null) throw Exception('Not logged in');
   final repo = ref.read(recipesRepositoryProvider);
   final result = await repo.toggleSaved(user.id, recipeId);
   // refresh saved set

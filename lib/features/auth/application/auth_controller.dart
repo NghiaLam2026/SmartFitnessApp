@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:gotrue/gotrue.dart' show AuthException;
 import '../../../core/supabase/supabase_client.dart';
 import '../data/auth_repository.dart';
 import '../data/auth_repository_impl.dart';
@@ -42,7 +43,7 @@ class AuthController extends StateNotifier<AuthState> {
       state = state.copyWith(loading: false, user: user);
       if (context.mounted && user != null) context.go('/home');
     } on AuthException catch (e) {
-      state = state.copyWith(loading: false, error: e.message);
+      state = state.copyWith(loading: false, error: e.toString());
     } catch (e) {
       state = state.copyWith(loading: false, error: 'Unexpected error');
       debugPrint(e.toString());
@@ -64,7 +65,7 @@ class AuthController extends StateNotifier<AuthState> {
       state = state.copyWith(loading: false, user: null);
       if (context.mounted) context.go('/login?justSignedUp=1');
     } on AuthException catch (e) {
-      state = state.copyWith(loading: false, error: e.message);
+      state = state.copyWith(loading: false, error: e.toString());
     } catch (e) {
       state = state.copyWith(loading: false, error: 'Unexpected error');
       debugPrint(e.toString());
@@ -87,7 +88,7 @@ class AuthController extends StateNotifier<AuthState> {
       await _ref.read(authRepositoryProvider).resendEmailConfirmation(email: email);
       return true;
     } on AuthException catch (e) {
-      state = state.copyWith(error: e.message);
+      state = state.copyWith(error: e.toString());
       return false;
     } catch (e) {
       state = state.copyWith(error: 'Unexpected error');
@@ -100,7 +101,7 @@ class AuthController extends StateNotifier<AuthState> {
       await _ref.read(authRepositoryProvider).resetPassword(email: email, redirectTo: redirectTo);
       return true;
     } on AuthException catch (e) {
-      state = state.copyWith(error: e.message);
+      state = state.copyWith(error: e.toString());
       return false;
     } catch (_) {
       state = state.copyWith(error: 'Unexpected error');

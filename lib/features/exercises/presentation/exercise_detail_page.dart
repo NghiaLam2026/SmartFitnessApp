@@ -152,13 +152,45 @@ class _ExerciseDetailPageState extends ConsumerState<ExerciseDetailPage> {
             children: [
               Text(e.name, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
               const SizedBox(height: 8),
-              Text('${e.muscle ?? '—'} • ${(e.equipment ?? 'none')}',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7))),
+              Builder(
+                builder: (context) {
+                  final theme = Theme.of(context);
+                  final muscleText = e.muscle ?? '—';
+                  final equipmentText = e.equipment ?? 'none';
+                  final subtitleText = '$muscleText • $equipmentText';
+                  return Text(
+                    subtitleText,
+                    style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.7)),
+                  );
+                },
+              ),
               const SizedBox(height: 16),
               if ((e.thumbnailUrl ?? '').isNotEmpty)
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: Image.network(e.thumbnailUrl!, height: 180, width: double.infinity, fit: BoxFit.cover),
+                  child: Image.network(
+                    e.thumbnailUrl!,
+                    height: 180,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        height: 180,
+                        color: Colors.grey[300],
+                        child: const Center(child: CircularProgressIndicator()),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        height: 180,
+                        color: Colors.grey[300],
+                        child: const Center(
+                          child: Icon(Icons.broken_image, size: 48, color: Colors.grey),
+                        ),
+                      );
+                    },
+                  ),
                 ),
               const SizedBox(height: 16),
               if ((e.instructions ?? '').isNotEmpty) ...[
