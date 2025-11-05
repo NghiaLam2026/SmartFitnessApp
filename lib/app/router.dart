@@ -11,8 +11,6 @@ import '../features/recipes/presentation/recipe_library_page.dart';
 import '../features/recipes/presentation/recipe_detail_page.dart';
 import '../features/profile/presentation/profile_page.dart';
 import '../features/injury/presentation/injury_planner_page.dart';
-import '../features/injury/presentation/injury_detail_page.dart';
-import '../features/injury/presentation/injury_player_page.dart';
 import '../features/exercises/presentation/exercise_library_page.dart';
 import '../features/exercises/presentation/exercise_detail_page.dart';
 import '../features/tracking/mock_test_tracker_screen.dart';
@@ -99,23 +97,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'injury',
             builder: (context, state) => const InjuryPlannerPage(),
-            routes: [
-              GoRoute(
-                path: 'protocol/:id',
-                builder: (context, state) {
-                  final id = state.pathParameters['id'] ?? '';
-                  return InjuryDetailPage(protocolId: id);
-                },
-              ),
-              GoRoute(
-                path: 'player',
-                builder: (context, state) {
-                  final m = (state.extra as Map?) ?? const {};
-                  final id = (m['protocolId'] as String?) ?? '';
-                  return InjuryPlayerPage(protocolId: id);
-                },
-              ),
-            ],
           ),
           GoRoute(
             path: 'workouts',

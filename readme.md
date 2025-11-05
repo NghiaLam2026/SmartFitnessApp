@@ -204,7 +204,6 @@ git push   # pushes to origin/feature/my-change
 git pull   # pulls from origin/feature/my-change
 ```
 
-
 ### Final step: Open a Pull Request
 - Go to your repository on GitHub
 - Click "Compare & pull request" for `feature/my-change` → `main`

@@ -92,13 +92,13 @@ class _ExerciseLibraryPageState extends ConsumerState<ExerciseLibraryPage> {
                   separatorBuilder: (_, __) => const Divider(height: 1),
                   itemBuilder: (context, i){
                     final e = list[i];
+                    final initial = e.name.isNotEmpty ? e.name[0].toUpperCase() : '?';
+                    final subtitle = '${e.muscle ?? '—'} • ${(e.equipment ?? 'none')}';
                     return ListTile(
-                      leading: CircleAvatar(child: Text(e.name.isNotEmpty ? e.name[0].toUpperCase() : '?')),
+                      leading: CircleAvatar(child: Text(initial)),
                       title: Text(e.name),
-                      subtitle: Text('${e.muscle ?? '—'} • ${(e.equipment ?? 'none')}'),
-                      onTap: (){
-                        context.push('/home/exercise/${e.id}');
-                      },
+                      subtitle: Text(subtitle),
+                      onTap: () => context.push('/home/exercise/${e.id}'),
                     );
                   },
                 );

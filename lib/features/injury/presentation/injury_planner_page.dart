@@ -54,6 +54,7 @@ class _InjuryPlannerPageState extends ConsumerState<InjuryPlannerPage> {
                   itemCount: list.length,
                   itemBuilder: (context, i){
                     final ex = list[i];
+                    final muscleText = ex.muscle ?? '—';
                     return Padding(
                       padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
                       child: Card(
@@ -61,11 +62,9 @@ class _InjuryPlannerPageState extends ConsumerState<InjuryPlannerPage> {
                         child: ListTile(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           title: Text(ex.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                          subtitle: Text(ex.muscle ?? '—'),
+                          subtitle: Text(muscleText),
                           trailing: const Icon(Icons.chevron_right_rounded),
-                          onTap: (){
-                            context.push('/home/exercise/${ex.id}');
-                          },
+                          onTap: () => context.push('/home/exercise/${ex.id}'),
                         ),
                       ),
                     );
@@ -191,8 +190,6 @@ class _SubAreaChips extends StatelessWidget {
     );
   }
 }
-
-// Old empty-state for protocols removed in exercises-first variant
 
 class _ErrorRetry extends StatelessWidget {
   const _ErrorRetry({required this.message, required this.onRetry});
