@@ -166,7 +166,7 @@ class _Highlights extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const ActivityTrackerScreen(),
+                      builder: (context) => const HealthTrackerScreen(),
                     )
                   );
                 },

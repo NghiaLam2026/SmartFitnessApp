@@ -34,5 +34,11 @@ class WorkoutRepository {
       .order('date', ascending: false);
     return List<Map<String, dynamic>>.from(response);
   }
+  Future<void> updateWorkout(int workoutId, {bool? isCompleted}) async{
+    await _client.from('workouts').update({
+      if (isCompleted != null) 'is_completed': isCompleted,
+      'updated_at': DateTime.now().toIso8601String(),
+    }).eq('workout_id', workoutId);
+  }
 
 }

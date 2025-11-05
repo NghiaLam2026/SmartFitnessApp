@@ -1,0 +1,42 @@
+why is the permission file needed?
+
+health connect requires every app that requests permissions to provide a privacy rationale screen, 
+a privay rational screen which users can open from the health connect settings screen.
+
+this file provides that screen.
+
+after adding it run
+
+flutter clean
+flutter pub get 
+flutter run
+
+health connect permissions will be handled correctly. google health connect compilance requirements for runtime permission rationale. 
+
+
+
+next step afterwards, 
+
+
+when the app starts -> check if the health connect is available.
+
+if it is
+    -> ask permission to read steps and heart rate 
+
+    once permission is granted you fetch the daily step count and save it to the supabase.
+
+-add the <activity> and <activity-alias> entries inside AndriodManifest.xml
+
+-create a new file 
+android/app/src/main/kotlin/com/example/smart_fitness_app/OnboardingActivity.kt
+
+
+inserting data
+
+Health Connect (system data)
+    |
+flutter app reads totals via plugin 
+    |
+ProgressRepository.addProgress()
+    |
+Supabase table: user_progress

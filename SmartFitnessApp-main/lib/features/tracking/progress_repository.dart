@@ -1,6 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/supabase/supabase_client.dart';
-
+//this file is the database table for data tracking
 class ProgressRepository {
   final SupabaseClient _client;
 
