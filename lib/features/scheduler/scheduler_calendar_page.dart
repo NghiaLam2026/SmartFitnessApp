@@ -1,83 +1,80 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'scheduler_event.dart';
-import 'dart:math';
+import 'scheduler_provider.dart';
 
-class SchedulerCalendarPage extends StatefulWidget {
+class SchedulerCalendarPage extends ConsumerStatefulWidget {
   const SchedulerCalendarPage({super.key});
 
   @override
-  State<SchedulerCalendarPage> createState() => _SchedulerCalendarPageState();
+  ConsumerState<SchedulerCalendarPage> createState() =>
+      _SchedulerCalendarPageState();
 }
 
-class _SchedulerCalendarPageState extends State<SchedulerCalendarPage> {
+class _SchedulerCalendarPageState extends ConsumerState<SchedulerCalendarPage> {
   CalendarFormat _format = CalendarFormat.month;
   DateTime _focusedDay = DateTime.now();
   DateTime _selectedDay = DateTime.now();
 
-  /// Simple in-memory map of events per day
-  final Map<DateTime, List<SchedulerEvent>> _events = {};
-
-  List<SchedulerEvent> _getEventsForDay(DateTime day) {
-    final key = DateTime(day.year, day.month, day.day);
-    return _events[key] ?? const [];
-  }
-
   void _addEventForSelectedDay(String title, {String? note}) {
-    final dayKey = DateTime(
+    final dayOnly = DateTime(
       _selectedDay.year,
       _selectedDay.month,
       _selectedDay.day,
     );
-    final list = _events[dayKey] ?? <SchedulerEvent>[];
-    list.add(
-      SchedulerEvent(
-        id: 'evt_${Random().nextInt(1 << 31)}',
-        date: dayKey,
-        title: title,
-        note: note,
-      ),
-    );
-    _events[dayKey] = list;
-    setState(() {});
+
+    ref
+        .read(schedulerProvider.notifier)
+        .addEvent(
+          dayOnly,
+          SchedulerEvent(
+            id: 'evt_${Random().nextInt(1 << 31)}',
+            date: dayOnly,
+            title: title,
+            note: note,
+          ),
+        );
+
+    setState(() {}); // refresh UI
   }
 
   Future<void> _promptNewEvent() async {
     final titleCtrl = TextEditingController();
     final noteCtrl = TextEditingController();
-    final result = await showDialog<bool>(
+
+    final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          title: const Text('Add Event'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: titleCtrl,
-                decoration: const InputDecoration(labelText: 'Title'),
-              ),
-              TextField(
-                controller: noteCtrl,
-                decoration: const InputDecoration(labelText: 'Note (optional)'),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel'),
+      builder: (ctx) => AlertDialog(
+        title: const Text('Add Event'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: titleCtrl,
+              decoration: const InputDecoration(labelText: 'Title'),
             ),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Add'),
+            TextField(
+              controller: noteCtrl,
+              decoration: const InputDecoration(labelText: 'Note (optional)'),
             ),
           ],
-        );
-      },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Add'),
+          ),
+        ],
+      ),
     );
 
-    if (result == true && titleCtrl.text.trim().isNotEmpty) {
+    if (confirmed == true && titleCtrl.text.trim().isNotEmpty) {
       _addEventForSelectedDay(
         titleCtrl.text.trim(),
         note: noteCtrl.text.trim().isEmpty ? null : noteCtrl.text.trim(),
@@ -87,7 +84,11 @@ class _SchedulerCalendarPageState extends State<SchedulerCalendarPage> {
 
   @override
   Widget build(BuildContext context) {
-    final events = _getEventsForDay(_selectedDay);
+    // watch provider so widget rebuilds when events change
+    ref.watch(schedulerProvider);
+
+    final scheduler = ref.read(schedulerProvider.notifier);
+    final events = scheduler.eventsFor(_selectedDay);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Scheduler Calendar')),
@@ -112,7 +113,7 @@ class _SchedulerCalendarPageState extends State<SchedulerCalendarPage> {
             },
             onFormatChanged: (f) => setState(() => _format = f),
             onPageChanged: (f) => _focusedDay = f,
-            eventLoader: _getEventsForDay,
+            eventLoader: (day) => scheduler.eventsFor(day),
             headerStyle: const HeaderStyle(
               formatButtonVisible: true,
               titleCentered: true,
@@ -152,12 +153,7 @@ class _SchedulerCalendarPageState extends State<SchedulerCalendarPage> {
                         ),
                         direction: DismissDirection.startToEnd,
                         onDismissed: (_) {
-                          final key = DateTime(
-                            e.date.year,
-                            e.date.month,
-                            e.date.day,
-                          );
-                          _events[key]?.removeWhere((x) => x.id == e.id);
+                          scheduler.removeEvent(e.date, e.id);
                           setState(() {});
                         },
                         child: Card(
