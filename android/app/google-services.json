@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "336725110525",
+    "project_id": "inventory-manager-a5bc5",
+    "storage_bucket": "inventory-manager-a5bc5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:336725110525:android:8838c5cfa3d295413d1894",
+        "android_client_info": {
+          "package_name": "com.example.smart_fitness_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAY39HDBqnSe-SC101xp2CFw3PkIHLza_k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

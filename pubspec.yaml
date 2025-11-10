@@ -36,7 +36,13 @@ dependencies:
   flutter_dotenv: ^5.1.0
   flutter_secure_storage: ^9.0.0
   dio: ^5.4.0
+<<<<<<< Updated upstream
   pedometer: ^3.0.0
+=======
+  firebase_messaging: ^14.7.10
+  firebase_core: ^2.24.2
+  pedometer: ^4.0.0
+>>>>>>> Stashed changes
   video_player: ^2.9.2
   chewie: ^1.8.5
   webview_flutter: ^4.10.0
