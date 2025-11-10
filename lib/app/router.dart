@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../core/supabase/supabase_client.dart';
+import 'package:smart_fitness_app/features/scheduler/scheduler_calendar_page.dart';
 import '../features/auth/presentation/login_page.dart';
 import '../features/auth/presentation/signup_page.dart';
 import '../features/auth/presentation/forgot_password_page.dart';
@@ -97,6 +98,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'injury',
             builder: (context, state) => const InjuryPlannerPage(),
+          ),
+          GoRoute(
+            path: 'scheduler',
+            builder:(context, state) => const SchedulerCalendarPage(),
           ),
           GoRoute(
             path: 'workouts',
