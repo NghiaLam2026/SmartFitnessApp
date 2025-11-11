@@ -42,7 +42,7 @@ By combining **AI personalization** and **real-time analytics**, the Smart Fitne
 
 - **🎯 Personalized AI Plans**: Adaptive workout and nutrition recommendations based on user goals, lifestyle, and data
 - **🤖 AI Coach (RAG-Powered)**: Conversational assistant using a vector database and embeddings to deliver **context-aware, tailored advice**
-- **📊 Progress Tracking & Analytics**: Monitor performance trends with clear, visual insights
+- **📅 Event Scheduler**: Plan and organize your fitness events with a calendar view. Link workouts to scheduled events, add notes, and manage your fitness schedule efficiently
 - **🏃 Community Event Tracker**: Discover local fitness activities such as CrossFit competitions, marathons, and 5Ks by searching nearby events using the user's ZIP code
 - **💰 Affordable & Accessible**: More cost-effective than personal trainers, but more adaptive than generic fitness apps
 
@@ -145,6 +145,7 @@ smart_fitness_app/
 │       ├── exercises/    # Exercise database
 │       ├── recipes/      # Nutrition & recipes
 │       ├── tracking/     # Progress tracking
+│       ├── scheduler/    # Event scheduling & calendar
 │       ├── injury/       # Injury prevention
 │       ├── home/         # Home dashboard
 │       └── profile/      # User profile

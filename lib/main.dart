@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/supabase/supabase_client.dart';
 import 'app/router.dart';
 import 'app/theme.dart';
+import 'features/scheduler/scheduler_calendar_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
