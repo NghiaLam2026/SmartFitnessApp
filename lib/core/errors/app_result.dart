@@ -1,3 +1,4 @@
+import 'app_exceptions.dart';
 /// Result type for handling success/failure without exceptions
 sealed class AppResult<T> {
   const AppResult();
@@ -20,19 +21,19 @@ final class Failure<T> extends AppResult<T> {
 extension AppResultExtensions<T> on AppResult<T> {
   /// Returns data if successful, null otherwise
   T? get dataOrNull => switch (this) {
-    Success(value: final data) => data,
+    Success(:final data) => data,
     Failure() => null,
   };
   
   /// Returns error if failed, null otherwise
   AppException? get errorOrNull => switch (this) {
     Success() => null,
-    Failure(error: final error) => error,
+    Failure(:final error) => error,
   };
   
   /// Returns data if successful, default value otherwise
   T dataOr(T defaultValue) => switch (this) {
-    Success(value: final data) => data,
+    Success(:final data) => data,
     Failure() => defaultValue,
   };
 }
@@ -43,8 +44,8 @@ extension FutureAppResultExtensions<T> on Future<AppResult<T>> {
   Future<AppResult<R>> map<R>(R Function(T) mapper) async {
     final result = await this;
     return switch (result) {
-      Success(value: final data) => AppResult.success(mapper(data)),
-      Failure(error: final error) => AppResult.failure(error),
+      Success(:final data) => AppResult.success(mapper(data)),
+      Failure(:final error) => AppResult.failure(error),
     };
   }
 }

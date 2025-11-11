@@ -58,7 +58,9 @@ class NotificationService {
 
     // Listen for runtime events.
     FirebaseMessaging.onMessage.listen(_handleRemoteMessage);
-    FirebaseMessaging.onMessageOpenedApp.listen(_handleRemoteMessage);
+    FirebaseMessaging.onMessageOpenedApp.listen(
+      (message) => _handleRemoteMessage(message, openedApplication: true),
+    );
     _messaging.onTokenRefresh.listen(_persistToken);
 
     // Persist the current token if available.
@@ -135,7 +137,7 @@ class NotificationService {
     bool openedApplication = false,
     bool fromBackground = false,
   }) async {
-    if (!fromBackground) {
+    if (!fromBackground && !openedApplication) {
       await _showLocalNotification(message);
     }
 

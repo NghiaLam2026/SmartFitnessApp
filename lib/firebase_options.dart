@@ -47,28 +47,29 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyAY39HDBqnSe-SC101xp2CFw3PkIHLza_k',
-    appId: '1:336725110525:android:8838c5cfa3d295413d1894',
-    messagingSenderId: '336725110525',
-    projectId: 'inventory-manager-a5bc5',
-    storageBucket: 'inventory-manager-a5bc5.firebasestorage.app',
+    apiKey: 'AIzaSyDi-dsyIkHLS39qJMK_dSKYziYvYne_cwI',
+    appId: '1:846498076999:android:02502f3dfbd8c17401d462',
+    messagingSenderId: '846498076999',
+    projectId: 'smartfitness-dfb87',
+    storageBucket: 'smartfitness-dfb87.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyAYLPWjTi905eMQ6VkE0_l2rikrYiXWM9w',
-    appId: '1:336725110525:ios:ffff661ecebb59f93d1894',
-    messagingSenderId: '336725110525',
-    projectId: 'inventory-manager-a5bc5',
-    storageBucket: 'inventory-manager-a5bc5.firebasestorage.app',
+    apiKey: 'AIzaSyCsCouPtnBR1GivnmduY11YFOSNIBjgj8c',
+    appId: '1:846498076999:ios:127a34e09cdb781901d462',
+    messagingSenderId: '846498076999',
+    projectId: 'smartfitness-dfb87',
+    storageBucket: 'smartfitness-dfb87.firebasestorage.app',
     iosBundleId: 'com.example.smartFitnessApp',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyAYLPWjTi905eMQ6VkE0_l2rikrYiXWM9w',
-    appId: '1:336725110525:ios:ffff661ecebb59f93d1894',
-    messagingSenderId: '336725110525',
-    projectId: 'inventory-manager-a5bc5',
-    storageBucket: 'inventory-manager-a5bc5.firebasestorage.app',
+    apiKey: 'AIzaSyCsCouPtnBR1GivnmduY11YFOSNIBjgj8c',
+    appId: '1:846498076999:ios:127a34e09cdb781901d462',
+    messagingSenderId: '846498076999',
+    projectId: 'smartfitness-dfb87',
+    storageBucket: 'smartfitness-dfb87.firebasestorage.app',
     iosBundleId: 'com.example.smartFitnessApp',
   );
+
 }

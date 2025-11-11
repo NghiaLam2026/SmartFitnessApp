@@ -1,5 +1,5 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -16,17 +16,18 @@ Future<void> main() async {
   // Load environment variables
   await dotenv.load(fileName: ".env");
 
+  // Initialize Supabase first so other services can depend on it.
+  await initSupabase();
+
   if (!kIsWeb) {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+    await NotificationService.instance.initialize();
+  } else {
+    // Firebase options for web are not configured yet; skip notification init.
+    debugPrint('Firebase notifications are disabled on web until configured.');
   }
-
-  // Initialize Supabase
-  await initSupabase();
-
-  // Initialize notification service
-  await NotificationService.instance.initialize();
 
   runApp(const ProviderScope(child: SmartFitnessApp()));
 }
