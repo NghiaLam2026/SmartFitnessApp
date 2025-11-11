@@ -72,22 +72,6 @@ class HomePage extends ConsumerWidget {
               _QuickActions(),
               const SizedBox(height: 16),
               _Highlights(),
-
-              const SizedBox(height: 32),
-              ElevatedButton.icon(
-                onPressed: () {
-                  context.push('/home/scheduler');
-                },
-                icon: const Icon(Icons.calendar_month),
-                label: const Text('Open Scheduler Calender'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 14,
-                  ),
-                  textStyle: const TextStyle(fontSize: 16),
-                ),
-              ),
             ],
           ),
         ),
@@ -168,6 +152,16 @@ class _QuickActions extends StatelessWidget {
           onPressed: () => context.push('/home/injury'),
           icon: const Icon(Icons.health_and_safety_rounded, size: 18),
           label: const Text('Injury Prevention'),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            textStyle: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+        ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          onPressed: () => context.push('/home/scheduler'),
+          icon: const Icon(Icons.calendar_today_rounded, size: 18),
+          label: const Text('Scheduler'),
           style: OutlinedButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
             textStyle: const TextStyle(fontWeight: FontWeight.w600),
