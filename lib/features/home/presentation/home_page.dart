@@ -175,8 +175,15 @@ class _Highlights extends StatelessWidget {
               const _HighlightCard(title: 'Streak', subtitle: '3 days', icon: Icons.local_fire_department_rounded),
               const SizedBox(width:12),
               //new tappable step trcker card
-              InkWell(
-                onTap: () => context.push('/home/activity-tracker'),
+              GestureDetector(
+                onTap: (){
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const HealthTrackerScreen(),
+                    )
+                  );
+                },
                 child: const _HighlightCard(title: 'Step Tracker', subtitle: 'Track your daily steps', icon: Icons.directions_walk_rounded),
               )
             ],

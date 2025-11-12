@@ -30,7 +30,7 @@ class ExerciseLibraryPage extends ConsumerStatefulWidget {
 class _ExerciseLibraryPageState extends ConsumerState<ExerciseLibraryPage> {
   String? _search;
   String? _muscle;
-  EquipmentYesNo _equipment = EquipmentYesNo.any;
+  final EquipmentYesNo _equipment = EquipmentYesNo.any;
 
   @override
   Widget build(BuildContext context) {
