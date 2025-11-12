@@ -30,6 +30,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  table_calendar: ^3.0.9
   flutter_riverpod: ^2.5.0
   go_router: ^14.0.0
   supabase_flutter: ^2.10.3
