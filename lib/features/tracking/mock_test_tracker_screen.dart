@@ -20,7 +20,8 @@ enum AppState{
   PERMISSIONS_REVOKED,
   PERMISSIONS_NOT_REVOKED,
   PERMISSIONS_REVOKING,
-  HEALTH_CONNECT_STATUS
+  HEALTH_CONNECT_STATUS,
+  WEIGHT,
 }
 
 class _HealthTrackerScreenState extends State<HealthTrackerScreen>{
@@ -29,6 +30,9 @@ class _HealthTrackerScreenState extends State<HealthTrackerScreen>{
 
   final List<HealthDataPoint> _healthData = [];
   int _totalSteps = 0;
+  double? _latestWeight;
+  //adding a new variable caloriesBurned
+  double? _caloriesBurned;
   bool _isSyncing = false;
   bool _isFetching = false;
   AppState _state = AppState.DATA_NOT_FETCHED; 
@@ -50,8 +54,8 @@ class _HealthTrackerScreenState extends State<HealthTrackerScreen>{
     await Permission.location.request();
 
     //health data types you want
-    final types = [HealthDataType.STEPS];
-    final permissions = [HealthDataAccess.READ];
+    final types = [HealthDataType.STEPS, HealthDataType.WEIGHT, HealthDataType.ACTIVE_ENERGY_BURNED];
+    final permissions = [HealthDataAccess.READ, HealthDataAccess.READ, HealthDataAccess.READ];
 
     //ask for authorization
     bool authorized = 
@@ -66,6 +70,8 @@ class _HealthTrackerScreenState extends State<HealthTrackerScreen>{
   //and updates the ui state accordingly
   Future<void> _fetchSteps() async{
     int? steps;
+    double? weight;
+    List<HealthDataPoint> weightData = [];
 
     final now = DateTime.now();
     final midnight = DateTime(now.year,now.month,now.day);
@@ -82,6 +88,7 @@ class _HealthTrackerScreenState extends State<HealthTrackerScreen>{
     } catch (e){
       debugPrint('Runtime permission request failed: $e');
     }
+
     try{
       await _health.configure();
     } catch(e){
@@ -92,6 +99,9 @@ class _HealthTrackerScreenState extends State<HealthTrackerScreen>{
       });
       return;
     }
+
+ 
+
     //verify health connect sdk availbility
     final status = await _health.getHealthConnectSdkStatus();
     if (status != HealthConnectSdkStatus.sdkAvailable){
@@ -103,37 +113,70 @@ class _HealthTrackerScreenState extends State<HealthTrackerScreen>{
       });
       return;
     }
-    bool? hasPermission = await _health.hasPermissions(
-      [HealthDataType.STEPS],
-      permissions: [HealthDataAccess.READ],
-    );
+    //request permission for steps + weight
+    final types = [HealthDataType.STEPS, HealthDataType.WEIGHT, HealthDataType.ACTIVE_ENERGY_BURNED];
+    final permissions = [HealthDataAccess.READ, HealthDataAccess.READ, HealthDataAccess.READ];
+    bool? hasPermission = await _health.hasPermissions(types, permissions: permissions);
     if (hasPermission != true){
-      bool granted = false;
-      try{
-        granted = await _health.requestAuthorization(
-          [HealthDataType.STEPS],
-          permissions: [HealthDataAccess.READ],
-        );
-      } catch (e) {
-        debugPrint('Error requesting authorization: $e');
-      }
+      final granted = await _health.requestAuthorization(types, permissions: permissions);
       if (!granted){
-        debugPrint('Step permission not granted by user.');
+        debugPrint('Health permissions not granted.');
         setState((){
-          _state=AppState.DATA_NOT_FETCHED;
+          _state = AppState.AUTH_NOT_GRANTED;
           _isFetching = false;
         });
         return;
       }
     }
     try{
+      //fetch total steps
       steps = await _health.getTotalStepsInInterval(midnight,now);
       debugPrint('Total steps today: $steps');
+      //fetch weight data points
+      weightData = await _health.getHealthDataFromTypes(startTime: midnight, endTime: now, types: [HealthDataType.WEIGHT]);
+      if (weightData.isNotEmpty){
+        final latest = weightData.last;
+        final HealthValue value = latest.value;
+
+        if (value is NumericHealthValue){
+          weight = value.numericValue.toDouble();
+          debugPrint('Current weight: ${weight.toStringAsFixed(1)} kg');
+        } else{
+          debugPrint('Unexpected weight value type: ${value.runtimeType}');
+        }
+
+        final List<HealthDataPoint> caloriesData = await _health.getHealthDataFromTypes(
+          startTime: midnight,
+          endTime: now,
+          types: [HealthDataType.ACTIVE_ENERGY_BURNED],
+        );
+        if(caloriesData.isNotEmpty){
+          final latest = caloriesData.last;
+          final HealthValue value = latest.value;
+
+          if (value is NumericHealthValue){
+            _caloriesBurned = value.numericValue.toDouble();
+            debugPrint('Calories burned today: ${_caloriesBurned!.toStringAsFixed(1)} kcal');
+          }else{
+            debugPrint('Unexpected calories value type: ${value.runtimeType}');
+          }
+        } else {
+          debugPrint('Unexpected calories value type: ${value.runtimeType}');
+        }
+      } else {
+        _caloriesBurned = null;
+        debugPrint('No calories data found for today.');
+      }
     } catch (error){
-      debugPrint("exception in getTotalStepsInInterval: $error");
+      debugPrint("exception in getTotalStepsInInterval: $error and $weight");
     }
+
     setState((){
       _totalSteps = (steps ?? 0);
+      _healthData
+        ..clear()
+        ..addAll(weightData);
+      _latestWeight = weight;
       _state = (steps == null)
         ? AppState.NO_DATA
         : AppState.STEPS_READY;
@@ -188,21 +231,125 @@ class _HealthTrackerScreenState extends State<HealthTrackerScreen>{
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            //STATUS
             Text('Status: $_state',
             style: theme.textTheme.titleMedium
               ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-            const SizedBox(height: 12),
-            Text(
-              'Steps Today:',
-              style: theme.textTheme.headlineSmall
-                ?.copyWith(fontWeight: FontWeight.bold),
+            const SizedBox(height: 16),
+            //
+            Card(
+              elevation: 3,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    const Icon(Icons.directions_walk,
+                    size: 36, color: Colors.blueAccent),
+                    const SizedBox(width: 16),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Steps Today',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          '$_totalSteps steps',
+                          style: theme.textTheme.headlineMedium?.copyWith(
+                            color: primary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],  
+                ),
+              ),
             ),
-            Text(
-              '$_totalSteps steps',
-              style: theme.textTheme.displaySmall
-                ?.copyWith(color: primary, fontWeight: FontWeight.w700),
+            const SizedBox(height: 16),
+            //WEIGHT CARD
+            //Show Weight
+            Card(
+              elevation: 3,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    const Icon(Icons.monitor_weight,
+                    size: 36, color: Colors.blueAccent),
+                    const SizedBox(width: 16),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'weight',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          _latestWeight !=null
+                            ? '${_latestWeight!.toStringAsFixed(1)} kg'
+                            : 'N/A',
+                          style: theme.textTheme.headlineMedium?.copyWith(
+                            color: primary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Card(
+              elevation: 3,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    const Icon(Icons.local_fire_department,
+                    size: 36, color: Colors.blueAccent),
+                    const SizedBox(width: 16),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Calories Burned',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          _caloriesBurned != null
+                            ? '${_caloriesBurned!.toStringAsFixed(1)} kcal'
+                            : 'N/A',
+                          style: theme.textTheme.headlineMedium?.copyWith(
+                            color: primary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: 24),
+            //ACTION BUTTONS
+            
+
 
             //fetch + sync buttons
             Row(
@@ -248,7 +395,7 @@ class _HealthTrackerScreenState extends State<HealthTrackerScreen>{
                   final point = _healthData[index];
                   final value = point.value;
                   final numeric = 
-                    value is NumericHealthValue ? value.numericValue : value;
+                    value is NumericHealthValue ? value.numericValue : value.toString();
                   return Card(
                     margin: const EdgeInsets.symmetric(vertical: 6),
                     elevation: 2,

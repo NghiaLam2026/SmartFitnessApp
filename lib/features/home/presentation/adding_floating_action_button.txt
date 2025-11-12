@@ -1,0 +1,15 @@
+inside Homepage's Scaffold right after body, add this
+
+new property
+
+
+foatingActionButton: FloatingActionButton(
+    onPression: (){
+        Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AiCoachChatScreen()),
+        );
+    },
+    backgroundColor: Theme.of(context).colorScheme.primary,
+    child: const Icon(Icons.chat_bubble_outline_rounded, color: Colors.white),
+),
