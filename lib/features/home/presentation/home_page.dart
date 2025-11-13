@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../../core/supabase/supabase_client.dart';
 import 'package:smart_fitness_app/features/tracking/mock_test_tracker_screen.dart';
+import 'ai_coach_chat_screen.dart';
 
 final profileProvider = FutureProvider.family<Map<String, dynamic>?, String?>((
   ref,
@@ -75,6 +76,17 @@ class HomePage extends ConsumerWidget {
             ],
           ),
         ),
+      ),
+      //Add this
+      floatingActionButton: FloatingActionButton(
+        onPressed: (){
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AiCoachChatScreen()),
+          );
+        },
+      backgroundColor: Theme.of(context).colorScheme.primary,
+      child: const Icon(Icons.chat_bubble_outline_rounded, color: Colors.white),
       ),
     );
   }
@@ -205,14 +217,19 @@ class _Highlights extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               //new tappable step trcker card
-              InkWell(
-                onTap: () => context.push('/home/activity-tracker'),
-                child: const _HighlightCard(
-                  title: 'Step Tracker',
-                  subtitle: 'Track your daily steps',
-                  icon: Icons.directions_walk_rounded,
-                ),
-              ),
+
+              GestureDetector(
+                onTap: (){
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const HealthTrackerScreen(),
+                    )
+                  );
+                },
+                child: const _HighlightCard(title: 'Step Tracker', subtitle: 'Track your daily steps', icon: Icons.directions_walk_rounded),
+              )
+
             ],
           ),
         ),

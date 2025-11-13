@@ -1,0 +1,37 @@
+install Ollama for embeddings
+
+then pull the embedding model:
+
+ollama pull nomic-embed-text
+
+since index.tx and generate_embedding.ts rely on Deno's runtime
+
+Deno is required to download because Supabase Edge Functions are built on Deno (not Node)
+please download T__T and add it on local env variables
+to verify 
+
+deno --version
+
+to install the supabase CLI to run on local backend
+
+npm install supabase --save-dev
+
+to check it
+
+npx supabase --version
+
+launch local Supabase stack
+
+npx supabase functions serve ai_coach_feedback --no-verify-jwt
+npx supabase functions deploy ai_coach_feedback --no-verify-jwt
+
+
+to test locally (powershell example)
+
+
+Invoke-RestMethod -Uri "http://<localhost>/functions/v1/ai_coach_feedback" `
+  -Method Post `
+  -Headers @{ "Content-Type" = "application/json" } `
+  -Body '{"query":"summarize my weekly progress","user_id":"YOUR_USER_ID"}'
+
+
