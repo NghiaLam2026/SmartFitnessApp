@@ -1,7 +1,10 @@
 -- Create trigger functions for notifications
 -- Migration: Create notification trigger functions
 
--- 1. Trigger function for workout reminders
+-- Enable HTTP extension (required for Edge Function calls)
+CREATE EXTENSION IF NOT EXISTS http WITH SCHEMA public;
+
+-- 1. Trigger function for workout reminders (just inserts job, doesn't call Edge Function)
 CREATE OR REPLACE FUNCTION trigger_workout_reminder(
   p_user_id UUID,
   p_workout_id UUID,
@@ -21,7 +24,7 @@ BEGIN
     p_scheduled_time - INTERVAL '30 minutes',
     jsonb_build_object(
       'title', 'Workout Reminder',
-      'body', p_workout_name || ' starts in 30 minutes , you Ready to go?',
+      'body', p_workout_name || ' starts in 30 minutes, you Ready to go?',
       'route', '/home/scheduler',
       'data', jsonb_build_object(
         'workout_id', p_workout_id::text,
@@ -39,8 +42,6 @@ CREATE OR REPLACE FUNCTION trigger_achievement(
   p_achievement_name TEXT,
   p_achievement_description TEXT
 ) RETURNS void AS $$
-DECLARE
-  v_notification_id UUID;
 BEGIN
   -- Insert into notifications table
   INSERT INTO notifications (
@@ -60,25 +61,10 @@ BEGIN
       )
     ),
     NOW()
-  ) RETURNING id INTO v_notification_id;
-
-  -- Call Edge Function to send push notification
-  PERFORM net.http_post(
-    'https://' || current_setting('app.supabase_url') || '/functions/v1/send-push-notification',
-    jsonb_build_object(
-      'user_id', p_user_id,
-      'kind', 'achievement',
-      'payload', jsonb_build_object(
-        'title', 'Achievement Unlocked!',
-        'body', p_achievement_description,
-        'route', '/home/achievements',
-        'data', jsonb_build_object(
-          'achievement_name', p_achievement_name
-        )
-      )
-    ),
-    'Bearer ' || current_setting('app.supabase_anon_key')
   );
+  
+  -- Note: Edge Function will be called separately via webhook or client-side
+  -- This keeps the database logic simple and avoids HTTP extension issues
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
@@ -109,25 +95,6 @@ BEGIN
       )
     ),
     NOW()
-  );
-
-  PERFORM net.http_post(
-    'https://' || current_setting('app.supabase_url') || '/functions/v1/send-push-notification',
-    jsonb_build_object(
-      'user_id', p_user_id,
-      'kind', 'social_challenge',
-      'payload', jsonb_build_object(
-        'title', 'New Challenge!',
-        'body', p_challenger_name || ' challenged you to ' || p_challenge_name,
-        'route', '/home/challenges',
-        'data', jsonb_build_object(
-          'challenge_id', p_challenge_id::text,
-          'challenge_name', p_challenge_name,
-          'challenger_name', p_challenger_name
-        )
-      )
-    ),
-    'Bearer ' || current_setting('app.supabase_anon_key')
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -162,26 +129,5 @@ BEGIN
     ),
     NOW()
   );
-
-  PERFORM net.http_post(
-    'https://' || current_setting('app.supabase_url') || '/functions/v1/send-push-notification',
-    jsonb_build_object(
-      'user_id', p_user_id,
-      'kind', 'event_notification',
-      'payload', jsonb_build_object(
-        'title', 'Upcoming Event',
-        'body', p_event_name || ' at ' || p_event_location,
-        'route', '/home/events',
-        'data', jsonb_build_object(
-          'event_id', p_event_id::text,
-          'event_name', p_event_name,
-          'event_location', p_event_location,
-          'event_time', p_event_time::text
-        )
-      )
-    ),
-    'Bearer ' || current_setting('app.supabase_anon_key')
-  );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
