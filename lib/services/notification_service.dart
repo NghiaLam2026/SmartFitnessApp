@@ -3,7 +3,9 @@ import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -19,12 +21,37 @@ class NotificationService {
   NotificationService._();
 
   static final NotificationService instance = NotificationService._();
+  static BuildContext? _context;
 
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
 
   bool _initialised = false;
+
+  /// Set the app context for navigation
+  static void setContext(BuildContext context) {
+    _context = context;
+  }
+
+  /// Navigate to a route with optional data
+  static void navigateTo(String route, {Map<String, dynamic>? data}) {
+    if (_context == null) {
+      debugPrint('NotificationService: Context not set, cannot navigate to $route');
+      return;
+    }
+
+    try {
+      if (data != null && data.isNotEmpty) {
+        _context!.go(route, extra: data);
+      } else {
+        _context!.go(route);
+      }
+      debugPrint('NotificationService: Navigated to $route');
+    } catch (e) {
+      debugPrint('NotificationService: Navigation failed - $e');
+    }
+  }
 
   static const AndroidNotificationChannel _defaultChannel = AndroidNotificationChannel(
     'fitness_notification_channel',
@@ -147,8 +174,21 @@ class NotificationService {
   /// Handle notification tap
   Future<void> _onNotificationTap(NotificationResponse response) async {
     debugPrint('Notification tapped: ${response.payload}');
-    // TODO: Parse payload and navigate using GoRouter
-    // Example: if payload contains route, navigate to that route
+    
+    // Parse payload if available
+    if (response.payload != null && response.payload!.isNotEmpty) {
+      try {
+        // Payload is encoded as query string format
+        final dataMap = _decodePayload(response.payload!);
+        final route = dataMap['route'] as String?;
+        
+        if (route != null) {
+          navigateTo(route, data: dataMap);
+        }
+      } catch (e) {
+        debugPrint('NotificationService: Failed to parse payload - $e');
+      }
+    }
   }
 
   /// Handle background notification tap
@@ -292,6 +332,19 @@ class NotificationService {
   /// Encode payload for local notification
   String _encodePayload(Map<String, dynamic> data) {
     return data.entries.map((e) => '${e.key}=${e.value}').join('&');
+  }
+
+  /// Decode payload from local notification
+  Map<String, dynamic> _decodePayload(String payload) {
+    final map = <String, dynamic>{};
+    final pairs = payload.split('&');
+    for (final pair in pairs) {
+      final keyValue = pair.split('=');
+      if (keyValue.length == 2) {
+        map[keyValue[0]] = keyValue[1];
+      }
+    }
+    return map;
   }
 
   /// Subscribe to a notification topic

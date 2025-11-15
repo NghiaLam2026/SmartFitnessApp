@@ -45,6 +45,9 @@ class SmartFitnessApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
     
+    // Set context for notification navigation
+    NotificationService.setContext(context);
+    
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       title: 'Smart Fitness',
