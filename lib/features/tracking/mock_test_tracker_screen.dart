@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:health/health.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:smart_fitness_app/features/tracking/badges/badge_repository.dart';
+import 'package:smart_fitness_app/features/tracking/badges/domain/badge_service.dart';
 import 'progress_repository.dart';
 
 class HealthTrackerScreen extends StatefulWidget{
@@ -27,6 +29,8 @@ enum AppState{
 class _HealthTrackerScreenState extends State<HealthTrackerScreen>{
   final Health _health = Health();
   final ProgressRepository _progressRepo = ProgressRepository();
+  final BadgeRepository _badgeRepo = BadgeRepository();
+  late final BadgeService _badgeService = BadgeService(badgeRepo: _badgeRepo);
 
   final List<HealthDataPoint> _healthData = [];
   int _totalSteps = 0;
@@ -36,6 +40,54 @@ class _HealthTrackerScreenState extends State<HealthTrackerScreen>{
   bool _isSyncing = false;
   bool _isFetching = false;
   AppState _state = AppState.DATA_NOT_FETCHED; 
+
+  //ADD POPUP METHOD
+  void _showBadgePopup(BuildContext context, Map<String, dynamic> badge){
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'New Badge Unlocked!',
+          textAlign: TextAlign.center,
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.network(
+              badge['icon_url'],
+              height: 120,
+              width: 120,
+              fit: BoxFit.contain,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              badge['badge_name'],
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            if (badge['description'] != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Text(
+                  badge['description'],
+                  textAlign: TextAlign.center,
+                ),
+              ),
+          ],
+        ),
+        actions: [
+          TextButton(  
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Awesome!'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   void initState(){
@@ -189,7 +241,19 @@ class _HealthTrackerScreenState extends State<HealthTrackerScreen>{
   Future<void> _syncToSupabase() async{
     setState(() => _isSyncing = true);
     try{
+      //1. sync with supabase
       await _progressRepo.synchHealthDataToSupabase();
+      //2.Check badges AFTER SYNCHING
+      await _badgeService.checkAllProgressBadges(
+        stepsToday: _totalSteps,
+        caloriesToday: (_caloriesBurned ?? 0).round(),
+      );
+      //3. show popup if a badge was earned
+      final newBadge = await _badgeRepo.getLatestBadge();
+      if(!mounted) return;
+      if (newBadge != null){
+        _showBadgePopup(context, newBadge);
+      }
       if (mounted){
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

@@ -1,0 +1,5 @@
+the current features has 2 badge-related behaviors
+
+1. popup dialog APPEARS ON THE HEALTH TRACKER SCREEN ONLY
+
+2. the horizonal badge row 

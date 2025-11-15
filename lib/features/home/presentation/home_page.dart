@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:smart_fitness_app/features/tracking/badges/badge_repository.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../../core/supabase/supabase_client.dart';
 import 'package:smart_fitness_app/features/tracking/mock_test_tracker_screen.dart';
@@ -69,6 +70,9 @@ class HomePage extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
             children: [
               _Header(greetingName: greetingName, profileAsync: profileAsync),
+              const SizedBox(height: 16),
+              const _BadgeRow(),
+              //ADD THIS HERE
               const SizedBox(height: 16),
               _QuickActions(),
               const SizedBox(height: 16),
@@ -278,6 +282,85 @@ class _HighlightCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _BadgeRow extends StatelessWidget{
+  const _BadgeRow({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context){
+    final badgeRepo = BadgeRepository();
+
+    return FutureBuilder(
+      future: badgeRepo.getAllBadges(),
+      builder: (context, snapshot){
+        //while loading badges
+        if (snapshot.connectionState == ConnectionState.waiting){
+          return const SizedBox(
+            height: 80,
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+        //No badges yet
+        if (!snapshot.hasData || (snapshot.data as List).isEmpty){
+          return const SizedBox(
+            height: 80,
+            child: Center(
+              child: Text(
+                "No Badges yet - keep going!",
+                style: TextStyle(fontSize: 16),
+              ),
+            ),
+          );
+        }
+        final badges = snapshot.data as List<Map<String, dynamic>>;
+        //Build badge list
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "My Badges",
+              style: TextStyle( 
+                fontSize: 20,
+                fontWeight: FontWeight.w700, 
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 80,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: badges.length,
+                separatorBuilder:  (_, __) => const SizedBox(width: 14),
+                itemBuilder: (context, i){
+                  final badge = badges[i];
+                  return Column(
+                    children: [
+                      //Badge image
+                      Image.network(badge["icon_url"],
+                      height: 55,
+                      width: 55,
+                      fit: BoxFit.contain,
+                      ),
+                      const SizedBox(height: 4),
+                      //Badge name
+                      Text(
+                        badge["badge_name"],
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            )
+          ],
+        );
+      },
     );
   }
 }

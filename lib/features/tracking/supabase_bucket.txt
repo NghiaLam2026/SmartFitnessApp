@@ -1,0 +1,13 @@
+please create sql to create user_badges
+
+create table user_badges (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id),
+  badge_name text not null,
+  description text,
+  icon_url text not null,
+  progress_type text,
+  progress_value numeric,
+  unlocked_at timestamp default now()
+);
+
