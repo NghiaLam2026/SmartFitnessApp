@@ -1,11 +1,9 @@
 import Flutter
 import UIKit
-import FirebaseCore
-import FirebaseMessaging
 import flutter_local_notifications
 
 @main
-@objc class AppDelegate: FlutterAppDelegate, MessagingDelegate, UNUserNotificationCenterDelegate {
+@objc class AppDelegate: FlutterAppDelegate {
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
@@ -25,12 +23,6 @@ import flutter_local_notifications
     }
     
     application.registerForRemoteNotifications()
-    
-    // Set up Firebase
-    FirebaseApp.configure()
-    
-    // Set up Firebase Messaging
-    Messaging.messaging().delegate = self
     
     // Set up Flutter local notifications
     FlutterLocalNotificationsPlugin.setPluginRegistrantCallback { registry in
@@ -63,13 +55,16 @@ import flutter_local_notifications
     // Print full message.
     print(userInfo)
     
+    // TODO: Handle deep linking based on notification payload
+    
     completionHandler()
   }
   
   // Handle registration for remote notifications
+  // TODO: Once OneSignal is set up, forward APNs token to OneSignal
   override func application(_ application: UIApplication,
                            didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
-    Messaging.messaging().apnsToken = deviceToken
+    // TODO: Send device token to OneSignal
     print("APNs token retrieved: \(deviceToken)")
   }
   
@@ -79,6 +74,8 @@ import flutter_local_notifications
                            fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
     // Print full message.
     print(userInfo)
+    
+    // TODO: Handle background notification processing
     
     completionHandler(UIBackgroundFetchResult.newData)
   }

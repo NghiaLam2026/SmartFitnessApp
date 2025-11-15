@@ -2,12 +2,9 @@ import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
-import '../core/supabase/supabase_client.dart';
 
 /// Notification service for handling push notifications via OneSignal + Supabase.
 /// 
@@ -94,12 +91,14 @@ class NotificationService {
   /// 
   /// This will be called when OneSignal provides a device token.
   /// Stores token in Supabase 'device_tokens' table (to be created).
+  // TODO: Uncomment and implement once OneSignal is set up
+  // ignore: unused_element
   Future<void> _persistToken(String token, String platform) async {
     final userId = Supabase.instance.client.auth.currentUser?.id;
-    if (userId == null) {
-      debugPrint('NotificationService: no authenticated user, skipping token sync.');
-      return;
-    }
+      if (userId == null) {
+        debugPrint('NotificationService: no authenticated user, skipping token sync.');
+        return;
+      }
 
     try {
       final deviceName = await _resolveDeviceName();
