@@ -96,13 +96,28 @@ class HomePage extends ConsumerWidget {
     }
 
     try {
-      // Call the database trigger function
+      // Step 1: Call the database trigger function to insert notification record
       await supabase.rpc(
         'trigger_achievement',
         params: {
           'p_user_id': userId,
           'p_achievement_name': 'Break the Streak',
           'p_achievement_description': 'Get off your phone and get moving!',
+        },
+      );
+
+      // Step 2: Call the Edge Function to send FCM notification
+      await supabase.functions.invoke(
+        'send-push-notification',
+        body: {
+          'user_id': userId,
+          'kind': 'achievement',
+          'payload': {
+            'title': 'Achievement Unlocked!',
+            'body': 'Break the Streak - You are on fire! Keep up the momentum!',
+            'route': '/home/achievements',
+            'data': {'achievement_name': 'Break the Streak'},
+          },
         },
       );
 
