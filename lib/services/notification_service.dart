@@ -1,36 +1,28 @@
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../firebase_options.dart';
+import '../core/supabase/supabase_client.dart';
 
-/// Background handler entrypoint. Must be a top-level function.
-@pragma('vm:entry-point')
-Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // Firebase isn't guaranteed to be initialised in the background isolate.
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-
-  await NotificationService.instance._handleRemoteMessage(message, fromBackground: true);
-}
-
+/// Notification service for handling push notifications via OneSignal + Supabase.
+/// 
+/// This service will:
+/// - Initialize OneSignal and request permissions
+/// - Register device tokens with Supabase
+/// - Handle incoming notifications and deep linking
+/// - Display local notifications when app is in foreground
 class NotificationService {
   NotificationService._();
 
   static final NotificationService instance = NotificationService._();
 
-  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
-  final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _localNotifications = 
+      FlutterLocalNotificationsPlugin();
 
   bool _initialised = false;
 
@@ -41,35 +33,36 @@ class NotificationService {
     importance: Importance.high,
   );
 
+  /// Initialize the notification service.
+  /// 
+  /// TODO: Once OneSignal is set up:
+  /// 1. Initialize OneSignal with App ID
+  /// 2. Request notification permissions
+  /// 3. Get device push token
+  /// 4. Register token with Supabase
+  /// 5. Set up notification handlers
   Future<void> initialize() async {
     if (_initialised || kIsWeb) {
       return;
     }
     _initialised = true;
 
-    // Ensure notifications work on Android by creating the default channel.
+    // Configure local notifications (for displaying notifications when app is open)
     await _configureLocalNotifications();
 
-    // Request permission on iOS/macOS and ensure auto-init is enabled everywhere.
-    await _requestPermissions();
+    // TODO: Request OneSignal permissions
+    // await _requestOneSignalPermissions();
 
-    // Configure background handler once at start-up.
-    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+    // TODO: Get OneSignal device token and register with Supabase
+    // await _registerDeviceToken();
 
-    // Listen for runtime events.
-    FirebaseMessaging.onMessage.listen(_handleRemoteMessage);
-    FirebaseMessaging.onMessageOpenedApp.listen(
-      (message) => _handleRemoteMessage(message, openedApplication: true),
-    );
-    _messaging.onTokenRefresh.listen(_persistToken);
+    // TODO: Set up OneSignal notification handlers
+    // _setupOneSignalHandlers();
 
-    // Persist the current token if available.
-    await _syncInitialToken();
-
-    // Handle a notification that launched the app.
-    await _handleInitialMessage();
+    debugPrint('NotificationService: initialized (OneSignal implementation pending)');
   }
 
+  /// Configure local notifications for Android/iOS
   Future<void> _configureLocalNotifications() async {
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings(
@@ -90,93 +83,18 @@ class NotificationService {
     }
   }
 
-  Future<void> _requestPermissions() async {
-    await _messaging.setAutoInitEnabled(true);
-
-    if (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.macOS) {
-      await _messaging.requestPermission(
-        alert: true,
-        badge: true,
-        sound: true,
-        criticalAlert: false,
-        provisional: false,
-      );
-    } else if (defaultTargetPlatform == TargetPlatform.android) {
-      final settings = await _messaging.getNotificationSettings();
-      if (settings.authorizationStatus == AuthorizationStatus.notDetermined) {
-        await _messaging.requestPermission(
-          alert: true,
-          badge: true,
-          sound: true,
-        );
-      }
-    }
-  }
-
-  Future<void> _syncInitialToken() async {
-    try {
-      final token = await _messaging.getToken();
-      if (token != null) {
-        await _persistToken(token);
-      }
-    } catch (error, stackTrace) {
-      debugPrint('NotificationService: failed to fetch token – $error');
-      FlutterError.reportError(FlutterErrorDetails(exception: error, stack: stackTrace));
-    }
-  }
-
-  Future<void> _handleInitialMessage() async {
-    final initialMessage = await _messaging.getInitialMessage();
-    if (initialMessage != null) {
-      await _handleRemoteMessage(initialMessage, openedApplication: true);
-    }
-  }
-
-  Future<void> _handleRemoteMessage(
-    RemoteMessage message, {
-    bool openedApplication = false,
-    bool fromBackground = false,
-  }) async {
-    if (!fromBackground && !openedApplication) {
-      await _showLocalNotification(message);
-    }
-
-    // TODO: route users into the app using message.data, if required.
-    debugPrint('NotificationService: received message '
-        '(opened=$openedApplication, background=$fromBackground) -> ${message.data}');
-  }
-
-  Future<void> _showLocalNotification(RemoteMessage message) async {
-    final notification = message.notification;
-    if (notification == null && message.data.isEmpty) return;
-
-    final notificationDetails = NotificationDetails(
-      android: AndroidNotificationDetails(
-        _defaultChannel.id,
-        _defaultChannel.name,
-        channelDescription: _defaultChannel.description,
-        importance: Importance.high,
-        priority: Priority.high,
-        icon: '@mipmap/ic_launcher',
-      ),
-      iOS: const DarwinNotificationDetails(),
-    );
-
-    await _localNotifications.show(
-      message.hashCode,
-      notification?.title ?? message.data['title'] as String?,
-      notification?.body ?? message.data['body'] as String?,
-      notificationDetails,
-      payload: message.data.isEmpty ? null : message.data.toString(),
-    );
-  }
-
+  /// Handle notification tap
   Future<void> _onNotificationTap(NotificationResponse response) async {
     debugPrint('NotificationService: notification tapped -> ${response.payload}');
-    // TODO: add navigation handling based on response.payload when UX is ready.
+    // TODO: Parse payload and navigate to appropriate screen
+    // Example: if payload contains route, navigate using go_router
   }
 
-  Future<void> _persistToken(String token) async {
+  /// Register device token with Supabase.
+  /// 
+  /// This will be called when OneSignal provides a device token.
+  /// Stores token in Supabase 'device_tokens' table (to be created).
+  Future<void> _persistToken(String token, String platform) async {
     final userId = Supabase.instance.client.auth.currentUser?.id;
     if (userId == null) {
       debugPrint('NotificationService: no authenticated user, skipping token sync.');
@@ -187,19 +105,23 @@ class NotificationService {
       final deviceName = await _resolveDeviceName();
       final packageInfo = await PackageInfo.fromPlatform();
 
-      await Supabase.instance.client.from('user_notification_tokens').upsert({
+      // TODO: Update table name once created in Supabase
+      // Expected table: device_tokens (id, user_id, token, platform, device_name, created_at, updated_at)
+      await Supabase.instance.client.from('device_tokens').upsert({
         'user_id': userId,
         'token': token,
+        'platform': platform, // 'ios', 'android', or 'web'
         'device_name': '$deviceName (v${packageInfo.version})',
       });
 
-      debugPrint('NotificationService: token synced for $deviceName');
+      debugPrint('NotificationService: token synced for $deviceName ($platform)');
     } catch (error, stackTrace) {
       debugPrint('NotificationService: failed to persist token – $error');
       FlutterError.reportError(FlutterErrorDetails(exception: error, stack: stackTrace));
     }
   }
 
+  /// Resolve device name for display in Supabase
   Future<String> _resolveDeviceName() async {
     final deviceInfo = DeviceInfoPlugin();
 
@@ -218,7 +140,30 @@ class NotificationService {
     return 'Unknown Device';
   }
 
-  Future<void> subscribeToTopic(String topic) => _messaging.subscribeToTopic(topic);
+  /// Show local notification (for foreground notifications)
+  Future<void> showLocalNotification({
+    required String title,
+    required String body,
+    Map<String, dynamic>? data,
+  }) async {
+    final notificationDetails = NotificationDetails(
+      android: AndroidNotificationDetails(
+        _defaultChannel.id,
+        _defaultChannel.name,
+        channelDescription: _defaultChannel.description,
+        importance: Importance.high,
+        priority: Priority.high,
+        icon: '@mipmap/ic_launcher',
+      ),
+      iOS: const DarwinNotificationDetails(),
+    );
 
-  Future<void> unsubscribeFromTopic(String topic) => _messaging.unsubscribeFromTopic(topic);
+    await _localNotifications.show(
+      DateTime.now().millisecondsSinceEpoch % 100000,
+      title,
+      body,
+      notificationDetails,
+      payload: data != null ? data.toString() : null,
+    );
+  }
 }

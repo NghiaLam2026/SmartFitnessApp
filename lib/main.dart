@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -7,8 +5,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'app/router.dart';
 import 'app/theme.dart';
 import 'core/supabase/supabase_client.dart';
-import 'firebase_options.dart';
-import 'services/notification_service.dart';
+// TODO: Import notification service once OneSignal is implemented
+// import 'services/notification_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,15 +17,10 @@ Future<void> main() async {
   // Initialize Supabase first so other services can depend on it.
   await initSupabase();
 
-  if (!kIsWeb) {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-    await NotificationService.instance.initialize();
-  } else {
-    // Firebase options for web are not configured yet; skip notification init.
-    debugPrint('Firebase notifications are disabled on web until configured.');
-  }
+  // TODO: Initialize OneSignal notification service here
+  // if (!kIsWeb) {
+  //   await NotificationService.instance.initialize();
+  // }
 
   runApp(const ProviderScope(child: SmartFitnessApp()));
 }
