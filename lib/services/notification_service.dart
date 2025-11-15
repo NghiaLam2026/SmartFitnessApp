@@ -281,11 +281,14 @@ class NotificationService {
 
       final deviceName = await _resolveDeviceName();
 
-      await supabase.from('user_notification_tokens').upsert({
-        'user_id': userId,
-        'token': token,
-        'device_name': deviceName,
-      });
+      await supabase.from('user_notification_tokens').upsert(
+        {
+          'user_id': userId,
+          'token': token,
+          'device_name': deviceName,
+        },
+        onConflict: 'user_id,token',
+      );
 
       debugPrint('NotificationService: Token persisted for $deviceName');
     } catch (error, stackTrace) {
