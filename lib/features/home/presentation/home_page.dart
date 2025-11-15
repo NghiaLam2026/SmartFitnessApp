@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../../core/supabase/supabase_client.dart';
+import '../../../services/notification_service.dart';
 import 'package:smart_fitness_app/features/tracking/mock_test_tracker_screen.dart';
 
 final profileProvider = FutureProvider.family<Map<String, dynamic>?, String?>((
@@ -44,6 +45,12 @@ class HomePage extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Smart Fitness'),
         actions: [
+          // Debug: Test notification button
+          IconButton(
+            onPressed: () => _testNotification(context, auth.user?.id),
+            icon: const Icon(Icons.notifications_active_rounded),
+            tooltip: 'Test notification',
+          ),
           IconButton(
             onPressed: () async {
               await context.push('/profile');
@@ -77,6 +84,40 @@ class HomePage extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  /// Test notification - trigger achievement notification
+  Future<void> _testNotification(BuildContext context, String? userId) async {
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No user logged in')),
+      );
+      return;
+    }
+
+    try {
+      // Call the database trigger function
+      await supabase.rpc(
+        'trigger_achievement',
+        params: {
+          'p_user_id': userId,
+          'p_achievement_name': 'Break the Streak',
+          'p_achievement_description': 'Get off your phone and get moving!',
+        },
+      );
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Test notification sent!')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
   }
 }
 
