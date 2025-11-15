@@ -19,6 +19,7 @@ import '../features/workouts/presentation/workout_library_page.dart';
 import '../features/workouts/presentation/create_workout_page.dart';
 import '../features/workouts/presentation/ai_workout_page.dart';
 import '../features/workouts/presentation/workout_detail_page.dart';
+import '../features/news/presentation/news_feed_page.dart';
 
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
@@ -99,12 +100,16 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: 'injury',
             builder: (context, state) => const InjuryPlannerPage(),
           ),
-          GoRoute(
-            path: 'scheduler',
-            builder:(context, state) => const SchedulerCalendarPage(),
-          ),
-          GoRoute(
-            path: 'workouts',
+              GoRoute(
+                path: 'scheduler',
+                builder:(context, state) => const SchedulerCalendarPage(),
+              ),
+              GoRoute(
+                path: 'news',
+                builder: (context, state) => const NewsFeedPage(),
+              ),
+              GoRoute(
+                path: 'workouts',
             builder: (context, state) => const WorkoutLibraryPage(),
             routes: [
               GoRoute(
