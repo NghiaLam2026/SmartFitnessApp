@@ -41,16 +41,18 @@ class HomePage extends ConsumerWidget {
         : fallbackName;
 
     return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         title: const Text('Smart Fitness'),
+        elevation: 0,
         actions: [
           IconButton(
             onPressed: () async {
               await context.push('/profile');
               ref.invalidate(profileProvider(auth.user?.id));
             },
-            icon: const Icon(Icons.build_rounded),
-            tooltip: 'Edit profile',
+            icon: const Icon(Icons.settings_rounded),
+            tooltip: 'Settings',
           ),
           IconButton(
             onPressed: () =>
@@ -64,14 +66,26 @@ class HomePage extends ConsumerWidget {
         child: RefreshIndicator(
           onRefresh: () async =>
               ref.refresh(profileProvider(auth.user?.id).future),
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
-            children: [
-              _Header(greetingName: greetingName, profileAsync: profileAsync),
-              const SizedBox(height: 16),
-              _QuickActions(),
-              const SizedBox(height: 16),
-              _Highlights(),
+          child: CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 32, 24, 0),
+                  child: _Header(greetingName: greetingName),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
+                  child: _QuickActions(),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+                  child: _Highlights(),
+                ),
+              ),
             ],
           ),
         ),
@@ -81,9 +95,8 @@ class HomePage extends ConsumerWidget {
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.greetingName, required this.profileAsync});
+  const _Header({required this.greetingName});
   final String greetingName;
-  final AsyncValue<Map<String, dynamic>?> profileAsync;
 
   @override
   Widget build(BuildContext context) {
@@ -93,21 +106,21 @@ class _Header extends StatelessWidget {
       children: [
         Text(
           'Good to see you,',
-          style: theme.textTheme.titleMedium?.copyWith(
+          style: theme.textTheme.titleLarge?.copyWith(
             color: theme.colorScheme.onSurface.withOpacity(0.6),
-            letterSpacing: -0.2,
+            fontWeight: FontWeight.w400,
+            letterSpacing: -0.3,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 8),
         Text(
           greetingName,
-          style: theme.textTheme.headlineMedium?.copyWith(
+          style: theme.textTheme.displaySmall?.copyWith(
             fontWeight: FontWeight.w700,
-            letterSpacing: -0.5,
+            letterSpacing: -0.8,
+            height: 1.1,
           ),
         ),
-        const SizedBox(height: 12),
-        // Profile edit now lives in the app bar wrench action
       ],
     );
   }
@@ -116,58 +129,142 @@ class _Header extends StatelessWidget {
 class _QuickActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        FilledButton.icon(
-          onPressed: () => context.push('/home/workouts'),
-          icon: const Icon(Icons.flash_on_rounded),
-          label: const Text('My Workouts'),
-          style: FilledButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+        Text(
+          'Quick Actions',
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w600,
+            letterSpacing: -0.3,
           ),
         ),
-        const SizedBox(height: 12),
-        OutlinedButton.icon(
-          onPressed: () => context.push('/home/recipes'),
-          icon: const Icon(Icons.menu_book_rounded, size: 18),
-          label: const Text('Recipes'),
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-            textStyle: const TextStyle(fontWeight: FontWeight.w600),
-          ),
+        const SizedBox(height: 16),
+        _ActionCard(
+          title: 'My Workouts',
+          subtitle: 'View and manage your workout plans',
+          icon: Icons.flash_on_rounded,
+          color: theme.colorScheme.primary,
+          onTap: () => context.push('/home/workouts'),
         ),
         const SizedBox(height: 12),
-        OutlinedButton.icon(
-          onPressed: () => context.push('/home/exercises'),
-          icon: const Icon(Icons.fitness_center_rounded, size: 18),
-          label: const Text('Exercises'),
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-            textStyle: const TextStyle(fontWeight: FontWeight.w600),
-          ),
+        _ActionCard(
+          title: 'Recipes',
+          subtitle: 'Discover healthy meal ideas',
+          icon: Icons.restaurant_menu_rounded,
+          color: Colors.orange,
+          onTap: () => context.push('/home/recipes'),
         ),
         const SizedBox(height: 12),
-        OutlinedButton.icon(
-          onPressed: () => context.push('/home/injury'),
-          icon: const Icon(Icons.health_and_safety_rounded, size: 18),
-          label: const Text('Injury Prevention'),
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-            textStyle: const TextStyle(fontWeight: FontWeight.w600),
-          ),
+        _ActionCard(
+          title: 'Injury Prevention',
+          subtitle: 'Learn how to stay injury-free',
+          icon: Icons.health_and_safety_rounded,
+          color: Colors.green,
+          onTap: () => context.push('/home/injury'),
         ),
         const SizedBox(height: 12),
-        OutlinedButton.icon(
-          onPressed: () => context.push('/home/scheduler'),
-          icon: const Icon(Icons.calendar_today_rounded, size: 18),
-          label: const Text('Scheduler'),
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-            textStyle: const TextStyle(fontWeight: FontWeight.w600),
-          ),
+        _ActionCard(
+          title: 'Scheduler',
+          subtitle: 'Plan your fitness schedule',
+          icon: Icons.calendar_today_rounded,
+          color: Colors.blue,
+          onTap: () => context.push('/home/scheduler'),
+        ),
+        const SizedBox(height: 12),
+        _ActionCard(
+          title: 'Health News',
+          subtitle: 'Stay updated with fitness news',
+          icon: Icons.article_rounded,
+          color: Colors.purple,
+          onTap: () => context.push('/home/news'),
         ),
       ],
+    );
+  }
+}
+
+class _ActionCard extends StatelessWidget {
+  const _ActionCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: theme.colorScheme.outline.withOpacity(0.1),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  icon,
+                  color: color,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withOpacity(0.6),
+                        letterSpacing: 0,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: theme.colorScheme.onSurface.withOpacity(0.3),
+                size: 24,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -182,36 +279,36 @@ class _Highlights extends StatelessWidget {
         Text(
           'Highlights',
           style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w600,
+            letterSpacing: -0.3,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         SizedBox(
-          height: 150,
+          height: 160,
           child: ListView(
             scrollDirection: Axis.horizontal,
             children: [
-              //here i made changes - viviana
-              const _HighlightCard(
+              _HighlightCard(
                 title: 'Today\'s Goal',
-                subtitle: 'complete 1 workout',
+                subtitle: 'Complete 1 workout',
                 icon: Icons.flag_rounded,
+                color: theme.colorScheme.primary,
               ),
               const SizedBox(width: 12),
-              const _HighlightCard(
+              _HighlightCard(
                 title: 'Streak',
                 subtitle: '3 days',
                 icon: Icons.local_fire_department_rounded,
+                color: Colors.orange,
               ),
               const SizedBox(width: 12),
-              //new tappable step trcker card
-              InkWell(
+              _HighlightCard(
+                title: 'Step Tracker',
+                subtitle: 'Track your daily steps',
+                icon: Icons.directions_walk_rounded,
+                color: Colors.blue,
                 onTap: () => context.push('/home/activity-tracker'),
-                child: const _HighlightCard(
-                  title: 'Step Tracker',
-                  subtitle: 'Track your daily steps',
-                  icon: Icons.directions_walk_rounded,
-                ),
               ),
             ],
           ),
@@ -226,41 +323,81 @@ class _HighlightCard extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.icon,
+    required this.color,
+    this.onTap,
   });
+
   final String title;
   final String subtitle;
   final IconData icon;
+  final Color color;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return SizedBox(
-      width: 220,
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
+    final card = Container(
+      width: 200,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.1),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              color: color,
+              size: 24,
+            ),
+          ),
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(icon, color: theme.colorScheme.primary),
-              const Spacer(),
               Text(
                 title,
                 style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.2,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
               Text(
                 subtitle,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withOpacity(0.6),
                 ),
               ),
             ],
           ),
-        ),
+        ],
       ),
     );
+
+    if (onTap != null) {
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: card,
+        ),
+      );
+    }
+
+    return card;
   }
 }
