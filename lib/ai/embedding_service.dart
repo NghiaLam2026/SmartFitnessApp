@@ -17,8 +17,8 @@ class EmbeddingService {
   // useUsbDevice    → Physical Android device via USB + adb reverse
   // useWifiDevice   → Physical Android device on same Wi-Fi
   //
-  static const bool useEmulator = false;
-  static const bool useUsbDevice = true;    // <-- ENABLE THIS FOR USB
+  static const bool useEmulator = true;
+  static const bool useUsbDevice = false;    // <-- ENABLE THIS FOR USB
   static const bool useWifiDevice = false;
 
   // ------------------------------------------------------------
@@ -93,3 +93,4 @@ class EmbeddingService {
     });
   }
 }
+
