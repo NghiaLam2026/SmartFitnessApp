@@ -336,6 +336,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "14.8.1"
+  google_places_autocomplete_text_field:
+    dependency: "direct main"
+    description:
+      name: google_places_autocomplete_text_field
+      sha256: "0d469f3230bca1ce517951ad248417e966b99aa748040bbc2090c564716d268e"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.3"
   gotrue:
     dependency: transitive
     description:
