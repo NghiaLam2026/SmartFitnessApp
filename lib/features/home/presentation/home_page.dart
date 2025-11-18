@@ -180,6 +180,24 @@ class _QuickActions extends StatelessWidget {
           color: Colors.purple,
           onTap: () => context.push('/home/news'),
         ),
+        const SizedBox(height: 12),
+        _ActionCard(
+          title: 'Events',
+          subtitle: 'Find local events near you',
+          icon: Icons.event_rounded,
+          color: const Color.fromARGB(255, 171, 176, 39),
+          onTap: () => context.push('/home/events'),
+        ),
+        const SizedBox(height: 12),
+        _ActionCard(
+          title: 'Meditation',
+          subtitle: 'Help improve your mental wellness',
+          icon: Icons.event_rounded,
+          color: const Color.fromARGB(255, 219, 42, 180),
+          onTap: () => context.push('/home/meditation'),
+        ),
+        const SizedBox(height: 12),
+
       ],
     );
   }
@@ -227,11 +245,7 @@ class _ActionCard extends StatelessWidget {
                   color: color.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: 28,
-                ),
+                child: Icon(icon, color: color, size: 28),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -310,6 +324,14 @@ class _Highlights extends StatelessWidget {
                 color: Colors.blue,
                 onTap: () => context.push('/home/activity-tracker'),
               ),
+              const SizedBox(width: 12),
+              _HighlightCard(
+                title: 'Mood Calendar',
+                subtitle: 'Check your Mood',
+                icon: Icons.mood_rounded,
+                color: Colors.deepPurple,
+                onTap: () => context.push('/home/mood'),
+              ),
             ],
           ),
         ),
@@ -358,11 +380,7 @@ class _HighlightCard extends StatelessWidget {
               color: color.withOpacity(0.15),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 24,
-            ),
+            child: Icon(icon, color: color, size: 24),
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
