@@ -22,7 +22,6 @@ import '../features/workouts/presentation/workout_detail_page.dart';
 import '../features/news/presentation/news_feed_page.dart';
 import '../features/wellness/presentation/meditation_page.dart';
 import '../features/wellness/presentation/mood_calendar_page.dart';
-import 'package:smart_fitness_app/features/events/presentation/create_event_page.dart';
 import 'package:smart_fitness_app/features/events/presentation/event_detail_screen.dart';
 import 'package:smart_fitness_app/features/events/presentation/event_page.dart';
 
@@ -71,11 +70,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: 'events',
             builder: (context, state) => const EventPage(),
             routes: [
-              GoRoute(
-                path: 'createEvent',
-                builder: (context, state) => const CreateEventPage(),
-              ),
-
               GoRoute(
                 path: 'eventDetail/:id',
                 builder: (context, state) {
