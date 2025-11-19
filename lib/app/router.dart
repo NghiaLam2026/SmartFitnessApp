@@ -19,6 +19,11 @@ import '../features/workouts/presentation/workout_library_page.dart';
 import '../features/workouts/presentation/create_workout_page.dart';
 import '../features/workouts/presentation/ai_workout_page.dart';
 import '../features/workouts/presentation/workout_detail_page.dart';
+import '../features/news/presentation/news_feed_page.dart';
+import '../features/wellness/presentation/meditation_page.dart';
+import '../features/wellness/presentation/mood_calendar_page.dart';
+import 'package:smart_fitness_app/features/events/presentation/event_detail_screen.dart';
+import 'package:smart_fitness_app/features/events/presentation/event_page.dart';
 
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
@@ -51,22 +56,29 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      GoRoute(
-        path: '/login',
-        builder: (context, state) => const LoginPage(),
-      ),
+      GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
       GoRoute(
         path: '/forgot-password',
         builder: (context, state) => const ForgotPasswordPage(),
       ),
-      GoRoute(
-        path: '/signup',
-        builder: (context, state) => const SignupPage(),
-      ),
+      GoRoute(path: '/signup', builder: (context, state) => const SignupPage()),
       GoRoute(
         path: '/home',
         builder: (context, state) => const HomePage(),
         routes: [
+          GoRoute(
+            path: 'events',
+            builder: (context, state) => const EventPage(),
+            routes: [
+              GoRoute(
+                path: 'eventDetail/:id',
+                builder: (context, state) {
+                  final id = state.pathParameters['id'] ?? '';
+                  return EventDetailScreen(eventId: id);
+                },
+              ),
+            ],
+          ),
           GoRoute(
             path: 'recipes',
             builder: (context, state) => const RecipeLibraryPage(),
@@ -101,7 +113,19 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: 'scheduler',
-            builder:(context, state) => const SchedulerCalendarPage(),
+            builder: (context, state) => const SchedulerCalendarPage(),
+          ),
+          GoRoute(
+            path: 'news',
+            builder: (context, state) => const NewsFeedPage(),
+          ),
+          GoRoute(
+            path: 'meditation',
+            builder: (context, state) => const MeditationPage(),
+          ),
+          GoRoute(
+            path: 'mood',
+            builder: (context, state) => const MoodCalendarPage(),
           ),
           GoRoute(
             path: 'workouts',
@@ -122,13 +146,13 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: 'ai',
                 builder: (context, state) => const AIWorkoutPage(),
               ),
-           GoRoute(
-             path: ':id',
-             builder: (context, state) {
-               final id = state.pathParameters['id'] ?? '';
-               return WorkoutDetailPage(workoutId: id);
-             },
-           ),
+              GoRoute(
+                path: ':id',
+                builder: (context, state) {
+                  final id = state.pathParameters['id'] ?? '';
+                  return WorkoutDetailPage(workoutId: id);
+                },
+              ),
             ],
           ),
         ],
@@ -140,4 +164,3 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
-
