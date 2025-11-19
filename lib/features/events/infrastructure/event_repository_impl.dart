@@ -1,11 +1,7 @@
-import 'dart:convert';
-
 import 'package:smart_fitness_app/core/supabase/supabase_client.dart';
 import 'package:smart_fitness_app/features/events/domain/event_model.dart';
-
 import 'package:smart_fitness_app/features/events/domain/register_event_model.dart';
 import 'package:smart_fitness_app/features/events/infrastructure/event_repository.dart';
-import 'package:smart_fitness_app/features/workouts/presentation/create_workout_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class EventRepositoryImpl implements EventRepository {
@@ -21,28 +17,40 @@ class EventRepositoryImpl implements EventRepository {
   }
 
   @override
-  Future<bool> checkingAdmin() async {
-    final user = _client.auth.currentUser;
-    if (user == null) throw Exception('User not authenticated');
-
-    final data = await _client
-        .from('profiles')
-        .select('role')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-    if (data == null) return false;
-
-    final role = data['role'];
-
-    return role == 'admin';
-  }
-
-  @override
   Stream<List<Event>> readAllCategoryEvent() {
-    return _client.from("events").stream(primaryKey: ["id"]).map((e) {
-      return e.map<Event>((event) => Event.fromMap(event)).toList();
-    });
+    try {
+      print('🔍 Starting to read events from database...');
+      return _client
+          .from("events")
+          .stream(primaryKey: ["id"])
+          .map((e) {
+            try {
+              print('📦 Received ${e.length} events from stream');
+              final events = e.map<Event>((event) {
+                try {
+                  print('📝 Parsing event: ${event['name'] ?? 'Unknown'}');
+                  return Event.fromMap(event);
+                } catch (e) {
+                  print('❌ Error parsing event: $e');
+                  print('Event data: $event');
+                  rethrow;
+                }
+              }).toList();
+              print('✅ Successfully parsed ${events.length} events');
+              return events;
+            } catch (e) {
+              print('❌ Error mapping events: $e');
+              rethrow;
+            }
+          })
+          .handleError((error) {
+            print('❌ Stream error in readAllCategoryEvent: $error');
+            throw error;
+          });
+    } catch (e) {
+      print('❌ Error creating stream: $e');
+      rethrow;
+    }
   }
 
   @override
@@ -82,5 +90,16 @@ class EventRepositoryImpl implements EventRepository {
     var data = event.toMap();
     data['user_id'] = user.id;
     await _client.from('event_register').insert(data);
+  }
+
+  @override
+  Future<void> deleteEventRegister(String eventId) async {
+    final user = _client.auth.currentUser;
+    if (user == null) throw Exception('User not authenticated');
+    await _client
+        .from('event_register')
+        .delete()
+        .eq('event_id', eventId)
+        .eq('user_id', user.id);
   }
 }

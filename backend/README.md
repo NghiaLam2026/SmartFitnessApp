@@ -54,8 +54,12 @@ Edit `.env` and add your configuration:
 
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here
+ACTIVE_DOT_COM_KEY=your_active_api_key_here
+NEWS_API_KEY=your_newsapi_key_here
 PORT=3000
 ```
+
+**Security Note:** All API keys are kept on the backend to prevent exposure to client-side code. This is a security best practice.
 
 **⚠️ Important:** Never commit your `.env` file. It's already in `.gitignore`.
 
@@ -164,11 +168,97 @@ Health check endpoint to verify the server is running.
 }
 ```
 
+### `GET /api/events/nearby`
+
+Search for nearby events using Active.com Activity Search API v2.
+
+**Query Parameters:**
+- `cityName` (string, optional): City name in format "City,State,US" (e.g., "San Diego,CA,US")
+- `lat` (number, optional): Latitude (required if cityName not provided)
+- `lng` (number, optional): Longitude (required if cityName not provided)
+- `radius` (number, optional): Search radius in miles (default: 25)
+- `query` (string, optional): Search keywords (e.g., "running", "marathon", "5k")
+- `startDate` (string, optional): Start date in YYYY-MM-DD format
+- `endDate` (string, optional): End date in YYYY-MM-DD format
+- `page` (number, optional): Page number (default: 1)
+- `perPage` (number, optional): Results per page (default: 20, max: 100)
+
+**Example Request:**
+```
+GET /api/events/nearby?cityName=San%20Diego,CA,US&radius=50&query=running
+```
+
+**Response:**
+
+```json
+{
+  "events": [
+    {
+      "id": "12345",
+      "name": "San Diego Marathon",
+      "description": "Annual marathon event",
+      "startsAt": "2025-12-15T07:00:00Z",
+      "endsAt": "2025-12-15T14:00:00Z",
+      "venue": "Balboa Park",
+      "address": "1549 El Prado, San Diego, CA",
+      "lat": 32.7313,
+      "lng": -117.1507,
+      "url": "https://...",
+      "registrationUrl": "https://...",
+      "category": "event"
+    }
+  ],
+  "totalResults": 50,
+  "page": 1,
+  "perPage": 20
+}
+```
+
+**Status Codes:**
+- `200`: Success
+- `400`: Bad Request (missing required parameters)
+- `503`: Service Unavailable (API key not configured)
+- `500`: Internal Server Error
+
+### `GET /api/events/:eventId`
+
+Get detailed information about a specific event by ID.
+
+**Path Parameters:**
+- `eventId` (string, required): Active.com event ID
+
+**Response:**
+
+```json
+{
+  "id": "12345",
+  "name": "San Diego Marathon",
+  "description": "Full event description...",
+  "startsAt": "2025-12-15T07:00:00Z",
+  "endsAt": "2025-12-15T14:00:00Z",
+  "venue": "Balboa Park",
+  "address": "1549 El Prado, San Diego, CA",
+  "lat": 32.7313,
+  "lng": -117.1507,
+  "url": "https://...",
+  "registrationUrl": "https://...",
+  "category": "event"
+}
+```
+
+**Status Codes:**
+- `200`: Success
+- `400`: Bad Request (missing event ID)
+- `503`: Service Unavailable (API key not configured)
+- `500`: Internal Server Error
+
 ## Environment Variables
 
 | Variable | Description | Required | Default |
 |----------|-------------|----------|---------|
 | `GEMINI_API_KEY` | Your Google Gemini API key | Yes | - |
+| `ACTIVE_DOT_COM_KEY` | Your Active.com Activity Search API v2 key (for events) | No | - |
+| `NEWS_API_KEY` | Your NewsAPI key (for news feed) | Yes | - |
 | `PORT` | Server port number | No | `3000` |
 
 ## Development

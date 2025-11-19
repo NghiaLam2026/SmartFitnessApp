@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_places_autocomplete_text_field/google_places_autocomplete_text_field.dart';
 import 'package:smart_fitness_app/features/events/domain/event_model.dart';
 import 'package:smart_fitness_app/features/events/infrastructure/event_repository_impl.dart';
 import 'package:intl/intl.dart';
@@ -103,27 +102,14 @@ class _CreateEventPageState extends State<CreateEventPage> {
                     ),
                   ],
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: GooglePlacesAutoCompleteTextFormField(
-                    config: const GoogleApiConfig(
-                      apiKey: 'AIzaSyAXfKpG8TAL8HaVG3eMoMfKeNcekmmevWA',
-                      countries: ['us'],
-                      fetchPlaceDetailsWithCoordinates: true,
-                      debounceTime: 400,
-                    ),
-                    textEditingController: venueController,
-                    decoration: textFieldDecoration("Venue"),
-                    onSuggestionClicked: (prediction) {
-                      setState(() {
-                        venue = prediction.description;
-                        venueController.text = prediction.description ?? "";
-                        lat = double.tryParse(prediction.lat ?? "0");
-                        lng = double.tryParse(prediction.lng ?? "0");
-                      });
-                      print(prediction.description);
-                    },
-                  ),
+                eventTextField(
+                  controller: venueController,
+                  title: "Venue",
+                  onSaved: (value) {
+                    setState(() {
+                      venue = value;
+                    });
+                  },
                 ),
 
                 eventTextField(
