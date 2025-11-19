@@ -27,13 +27,9 @@
         android:name="${applicationName}"
         android:label="Smart Fitness App"
         android:icon="@mipmap/ic_launcher">
-<<<<<<< HEAD
-
         <!-- 🧩 Main Flutter Activity -->
-=======
-                <meta-data android:name="com.google.android.geo.API_KEY"
-    android:value="AIzaSyAXfKpG8TAL8HaVG3eMoMfKeNcekmmevWA"/>
->>>>>>> main
+        <meta-data android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyAXfKpG8TAL8HaVG3eMoMfKeNcekmmevWA"/>
         <activity
             android:name=".MainActivity"
             android:exported="true">
