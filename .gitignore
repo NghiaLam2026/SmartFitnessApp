@@ -50,3 +50,6 @@ app.*.map.json
 .env
 .env.*
 !.env.example
+
+# Android local properties (may contain API keys)
+android/local.properties

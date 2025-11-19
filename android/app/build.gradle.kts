@@ -28,6 +28,22 @@ android {
         targetSdk = 34
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        // Google Places API is now called through backend - no client-side key needed
+        // If you need Google Maps SDK, uncomment and configure:
+        /*
+        val localProperties = java.util.Properties()
+        val localPropertiesFile = rootProject.file("local.properties")
+        if (localPropertiesFile.exists()) {
+            localProperties.load(java.io.FileInputStream(localPropertiesFile))
+        }
+        
+        val googlePlacesApiKey = System.getenv("GOOGLE_PLACES_API_KEY")
+            ?: localProperties.getProperty("google.places.api.key")
+            ?: "YOUR_GOOGLE_PLACES_API_KEY_HERE"
+        
+        manifestPlaceholders["googlePlacesApiKey"] = googlePlacesApiKey
+        */
     }
 
     buildTypes {

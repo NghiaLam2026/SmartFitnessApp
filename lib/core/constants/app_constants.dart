@@ -1,6 +1,10 @@
 import 'dart:io';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// Application constants
+/// 
+/// All API keys and sensitive configuration should be loaded from environment variables.
+/// Never commit API keys directly in code.
 class AppConstants {
   // AI Workout Generator Backend URL
   // For Android emulator: use http://10.0.2.2:3000
@@ -27,4 +31,3 @@ class AppConstants {
     }
   }
 }
-

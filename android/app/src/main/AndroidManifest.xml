@@ -8,6 +8,9 @@
 
     <!-- 🏃 Required for step count & activity recognition -->
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
 
     <!-- 📍 Optional (only if you show workout distances / GPS routes) -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
@@ -30,6 +33,26 @@
         <!-- 🧩 Main Flutter Activity -->
         <meta-data android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyAXfKpG8TAL8HaVG3eMoMfKeNcekmmevWA"/>
+                <!-- Google Places API Key -->
+                <!--
+                    NOTE: Google Places API is now called through our backend server.
+                    The API key is stored securely on the backend and never exposed to the client.
+
+                    If you need Google Maps SDK features (not just Places API), uncomment below
+                    and configure the key in android/local.properties or as an environment variable.
+
+                    IMPORTANT: If you enable this, restrict the API key in Google Cloud Console:
+                    1. Go to Google Cloud Console > APIs & Services > Credentials
+                    2. Select your API key
+                    3. Under "Application restrictions":
+                       - Add Android app: Package name + SHA-1 fingerprint
+                    4. Under "API restrictions": Restrict to only needed APIs
+                -->
+                <!--
+                <meta-data
+                    android:name="com.google.android.geo.API_KEY"
+                    android:value="${googlePlacesApiKey}"/>
+                -->
         <activity
             android:name=".MainActivity"
             android:exported="true">

@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:smart_fitness_app/features/wellness/domain/mood_repository.dart';
-import 'package:smart_fitness_app/features/wellness/presentation/mood_calendar_page.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
 import 'meditation_page.dart';
@@ -16,6 +14,7 @@ class MeditationDetailPage extends StatefulWidget {
 
 class _MeditationDetailPageState extends State<MeditationDetailPage> {
   YoutubePlayerController? _ytController;
+  late final Stopwatch _stopwatch;
 
   bool get _hasVideoUrl =>
       widget.routine.videoUrl != null &&
@@ -24,6 +23,7 @@ class _MeditationDetailPageState extends State<MeditationDetailPage> {
   @override
   void initState() {
     super.initState();
+    _stopwatch = Stopwatch()..start();
     if (_hasVideoUrl) {
       final id = _extractYoutubeId(widget.routine.videoUrl!.trim());
       if (id != null) {
@@ -41,6 +41,9 @@ class _MeditationDetailPageState extends State<MeditationDetailPage> {
 
   @override
   void dispose() {
+    if (_stopwatch.isRunning) {
+      _stopwatch.stop();
+    }
     _ytController?.dispose();
     super.dispose();
   }
@@ -76,16 +79,16 @@ class _MeditationDetailPageState extends State<MeditationDetailPage> {
     final theme = Theme.of(context);
     final routine = widget.routine;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Meditation'),
-        leading: BackButton(
-          onPressed: () {
-            Navigator.of(context).pop();
-            showMoodPicker(context, DateTime.now(), MoodSessionType.after);
-          },
+    return WillPopScope(
+      onWillPop: () async {
+        _popWithElapsed();
+        return false;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Meditation'),
+          leading: BackButton(onPressed: _popWithElapsed),
         ),
-      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -238,6 +241,16 @@ class _MeditationDetailPageState extends State<MeditationDetailPage> {
           ],
         ),
       ),
+      ),
     );
+  }
+
+  void _popWithElapsed() {
+    if (_stopwatch.isRunning) {
+      _stopwatch.stop();
+    }
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop(_stopwatch.elapsed);
+    }
   }
 }

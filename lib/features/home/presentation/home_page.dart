@@ -200,7 +200,7 @@ class _QuickActions extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         _ActionCard(
-          title: 'Events',
+          title: 'Nearby Community Events',
           subtitle: 'Find local events near you',
           icon: Icons.event_rounded,
           color: const Color.fromARGB(255, 171, 176, 39),
