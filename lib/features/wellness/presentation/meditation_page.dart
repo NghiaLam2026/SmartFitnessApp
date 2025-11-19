@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../domain/mood_repository.dart';
 import '../infrastructure/meditation_repository.dart';
+import '../infrastructure/meditation_session_repository.dart';
 
 import 'meditation_detail_page.dart';
+import 'mood_calendar_page.dart';
 
 enum MeditationCategory { calm, focus, sleep }
 
@@ -84,6 +86,7 @@ class MeditationPage extends StatefulWidget {
 class _MeditationPageState extends State<MeditationPage> {
   MeditationCategory _selectedCategory = MeditationCategory.calm;
   late final MeditationRepository _repository;
+  late final MeditationSessionRepository _sessionRepository;
   List<MeditationRoutine> _allMeditations = [];
   bool _loading = true;
   String? _errorMessage;
@@ -92,6 +95,7 @@ class _MeditationPageState extends State<MeditationPage> {
   void initState() {
     super.initState();
     _repository = MeditationRepository();
+    _sessionRepository = MeditationSessionRepository();
     _loadMeditations();
   }
 
@@ -112,24 +116,178 @@ class _MeditationPageState extends State<MeditationPage> {
     }
   }
 
-  Future<void> _startSessionWithMood(
-      BuildContext context,
-      MeditationRoutine routine,
-      ) async {
-    final moodLabel = await _showPreSessionMoodSheet(context);
+  Future<void> _showSessionModeChoice(
+    BuildContext context,
+    MeditationRoutine routine,
+  ) async {
+    final theme = Theme.of(context);
 
-    if (moodLabel != null) {
-      MoodRepository.instance
-          .setMood(DateTime.now(), MoodSessionType.before, moodLabel);
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      builder: (_) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'How would you like to start?',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ListTile(
+                  leading: const Icon(Icons.psychology_outlined),
+                  title: const Text('With Mood Logging'),
+                  subtitle: const Text('Track your mood before and after'),
+                  onTap: () => Navigator.of(context).pop('with_mood'),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.play_circle_outline),
+                  title: const Text('Without Mood Logging'),
+                  subtitle: const Text('Start meditation directly'),
+                  onTap: () => Navigator.of(context).pop('without_mood'),
+                ),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (!mounted || choice == null) return;
+
+    if (choice == 'with_mood') {
+      await _startSessionWithMood(context, routine);
+    } else if (choice == 'without_mood') {
+      await _startSessionWithoutMood(context, routine);
     }
+  }
 
+  Future<void> _startSessionWithoutMood(
+    BuildContext context,
+    MeditationRoutine routine,
+  ) async {
+    MeditationSession? session;
+    Duration elapsed = Duration.zero;
+
+    try {
+      session = await _sessionRepository.startSession(
+        routine: routine,
+        beforeMood: null,
+      );
+
+      elapsed = await Navigator.of(context).push<Duration>(
+            MaterialPageRoute(
+              builder: (_) => MeditationDetailPage(routine: routine),
+            ),
+          ) ??
+          Duration.zero;
+
+      if (!mounted) return;
+    } catch (e) {
+      debugPrint('Failed to handle meditation session: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Unable to process this meditation. Please try again.'),
+          ),
+        );
+      }
+    } finally {
+      if (session != null) {
+        try {
+          await _sessionRepository.completeSession(
+            sessionId: session.id,
+            duration: elapsed,
+            afterMood: null,
+            meditationName: routine.title,
+          );
+        } catch (e) {
+          debugPrint('Failed to finalize session: $e');
+        }
+      }
+    }
+  }
+
+  Future<void> _startSessionWithMood(
+    BuildContext context,
+    MeditationRoutine routine,
+  ) async {
+    final beforeMood = await _showPreSessionMoodSheet(context);
     if (!mounted) return;
 
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => MeditationDetailPage(routine: routine),
-      ),
-    );
+    MeditationSession? session;
+    Duration elapsed = Duration.zero;
+    String? afterMood;
+
+    try {
+      session = await _sessionRepository.startSession(
+        routine: routine,
+        beforeMood: beforeMood,
+      );
+
+      if (beforeMood != null && session != null) {
+        MoodRepository.instance.applyMood(
+          timestamp: session.startedAt,
+          type: MoodSessionType.before,
+          moodLabel: beforeMood,
+        );
+      }
+
+      elapsed = await Navigator.of(context).push<Duration>(
+            MaterialPageRoute(
+              builder: (_) => MeditationDetailPage(routine: routine),
+            ),
+          ) ??
+          Duration.zero;
+
+      if (!mounted) return;
+
+      afterMood = await showMoodPicker(
+        context,
+        DateTime.now(),
+        MoodSessionType.after,
+      );
+
+      if (afterMood != null && session != null) {
+        MoodRepository.instance.applyMood(
+          timestamp: session.startedAt,
+          type: MoodSessionType.after,
+          moodLabel: afterMood,
+        );
+      }
+    } catch (e) {
+      debugPrint('Failed to handle meditation session: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Unable to process this meditation. Please try again.'),
+          ),
+        );
+      }
+    } finally {
+      if (session != null) {
+        try {
+          await _sessionRepository.completeSession(
+            sessionId: session.id,
+            duration: elapsed,
+            afterMood: afterMood,
+            meditationName: routine.title,
+          );
+        } catch (e) {
+          debugPrint('Failed to finalize session: $e');
+        }
+      }
+    }
   }
 
   Future<String?> _showPreSessionMoodSheet(BuildContext context) {
@@ -234,7 +392,7 @@ class _MeditationPageState extends State<MeditationPage> {
                   padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
                   child: _MeditationRoutineCard(
                     routine: routine,
-                    onTap: () => _startSessionWithMood(context, routine),
+                    onTap: () => _showSessionModeChoice(context, routine),
                   ),
                 );
               },
