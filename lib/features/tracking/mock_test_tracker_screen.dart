@@ -1,23 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:health/health.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'progress_repository.dart';
-import 'package:smart_fitness_app/features/tracking/badges/domain/badge_service.dart';
 import 'package:smart_fitness_app/features/tracking/badges/badge_repository.dart';
+import 'package:smart_fitness_app/features/tracking/badges/domain/badge_service.dart';
+import 'progress_repository.dart';
 import '../../../core/supabase/supabase_client.dart';
 import 'package:smart_fitness_app/ai/embedding_service.dart';
 import 'package:smart_fitness_app/ai/batch_embedding.dart';
 
-
-class HealthTrackerScreen extends StatefulWidget {
+class HealthTrackerScreen extends StatefulWidget{
   const HealthTrackerScreen({super.key});
 
   @override
   State<HealthTrackerScreen> createState() => _HealthTrackerScreenState();
-
 }
 
-enum AppState {
+enum AppState{
   DATA_NOT_FETCHED,
   FETCHING_DATA,
   NO_DATA,
@@ -30,7 +28,8 @@ enum AppState {
   HEALTH_CONNECT_STATUS,
 }
 
-class _HealthTrackerScreenState extends State<HealthTrackerScreen> {
+
+class _HealthTrackerScreenState extends State<HealthTrackerScreen>{
   final Health _health = Health();
   final ProgressRepository _progressRepo = ProgressRepository();
   final BadgeRepository _badgeRepo = BadgeRepository();
@@ -38,20 +37,18 @@ class _HealthTrackerScreenState extends State<HealthTrackerScreen> {
   late final BadgeService _badgeService = BadgeService(badgeRepo: _badgeRepo);
 
 
-  // Health data
   final List<HealthDataPoint> _healthData = [];
-  int _totalSteps = 0;
+  int _totalSteps =0;
 
-  // Manual / computed values
-  double? _latestWeight;      // user-entered weight (kg)
-  double? _caloriesBurned;    // computed from steps + weight
+  double? _latestWeight;
+  double? _caloriesBurned;
   final TextEditingController _weightController = TextEditingController();
 
   bool _isFetching = false;
-  bool _isSyncing = false; // keep for the Sync button
+  bool _isSyncing = false; //keep for sync button
   AppState _state = AppState.DATA_NOT_FETCHED;
 
-  void _showBadgePopup(BuildContext context, Map<String, dynamic> badge) {
+  void _showBadgePopup(BuildContext context, Map<String, dynamic> badge){
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -74,8 +71,9 @@ class _HealthTrackerScreenState extends State<HealthTrackerScreen> {
               badge['badge_name'],
               textAlign: TextAlign.center,
               style: const TextStyle(
-                fontSize: 20,
+                fontSize: 21,
                 fontWeight: FontWeight.bold,
+
               ),
             ),
             if (badge['description'] != null)
@@ -97,10 +95,8 @@ class _HealthTrackerScreenState extends State<HealthTrackerScreen> {
       ),
     );
   }
-
-
   @override
-  void initState() {
+  void initState(){
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await _initializeHealth();
@@ -108,143 +104,127 @@ class _HealthTrackerScreenState extends State<HealthTrackerScreen> {
     });
   }
 
-  Future<void> _initializeHealth() async {
+  Future<void> _initializeHealth() async{
     setState(() => _state = AppState.FETCHING_DATA);
 
     await _health.configure();
 
-    // request necessary runtime permissions
     await Permission.activityRecognition.request();
     await Permission.location.request();
 
-    // health data types you want (only steps)
+    //health data types you want (only steps)
     final types = [HealthDataType.STEPS];
     final permissions = [HealthDataAccess.READ];
 
-    // ask for authorization
     bool authorized =
+    //ask for authroization
     await _health.requestAuthorization(types, permissions: permissions);
 
     setState(() {
       _state = authorized ? AppState.AUTHORIZED : AppState.AUTH_NOT_GRANTED;
     });
   }
-
   Future<void> _loadExistingProgress() async {
     final data = await _progressRepo.getProgress();
 
-    if (data.isNotEmpty) {
-      final latest = data.first; // newest, because getProgress orders desc
+    if (data.isNotEmpty){
+      final latest = data.first;
 
-
-      setState(() {
+      setState((){
         _latestWeight = (latest['weight'] as num?)?.toDouble();
         _totalSteps = latest['steps_count'] ?? 0;
         _caloriesBurned = (latest['calories_burned'] as num?)?.toDouble();
 
-        // Also restore weight text field
-        if (_latestWeight != null) {
+        if (_latestWeight != null){
           _weightController.text = _latestWeight!.toString();
         }
       });
     }
   }
-
-
-  // Simple formula to estimate calories from steps + weight (kg)
-  double _calculateCaloriesFromSteps(int steps, double weightKg) {
-    const double stepLengthMeters = 0.762; // avg adult step length
+  //simple formula to est calories from steps + weight
+  double _calculateCaloriesFromSteps(int steps, double weightKg){
+    const double stepLengthMeters = 0.762; //avg adult step length
     final double distanceKm = (steps * stepLengthMeters) / 1000.0;
-    // 0.57 is an empirical coefficient for walking energy cost
     return 0.57 * distanceKm * weightKg;
   }
-
-  // safely fetches step count data from Health Connect
-  // and updates the UI state accordingly
-  Future<void> _fetchSteps() async {
+  //safely fetches step count data from health connect
+  Future<void> _fetchSteps() async{
     int? steps;
 
     final now = DateTime.now();
     final midnight = DateTime(now.year, now.month, now.day);
 
-    setState(() {
+    setState((){
       _isFetching = true;
       _state = AppState.FETCHING_DATA;
     });
-
-    // ensure android runtime permission for activity recognition
-    try {
-      if (await Permission.activityRecognition.isDenied) {
+    try{
+      if (await Permission.activityRecognition.isDenied){
         await Permission.activityRecognition.request();
       }
-    } catch (e) {
+    } catch (e){
       debugPrint('Runtime permission request failed: $e');
     }
-
-    try {
+    try{
       await _health.configure();
-    } catch (e) {
+
+    } catch(e){
       debugPrint('Error configuring health plugin: $e');
-      setState(() {
+      setState((){
         _state = AppState.DATA_NOT_FETCHED;
         _isFetching = false;
       });
       return;
     }
-
-    // verify Health Connect SDK availability
+    //verfiy health connect sdk availability
     final status = await _health.getHealthConnectSdkStatus();
-    if (status != HealthConnectSdkStatus.sdkAvailable) {
-      debugPrint('Health Connect not installed or unavailable (Status: $status)');
-      setState(() {
+    if (status != HealthConnectSdkStatus.sdkAvailable){
+      debugPrint('Health connect not installed or unavailable (Status: $status)');
+
+      setState((){
         _state = AppState.DATA_NOT_FETCHED;
         _isFetching = false;
       });
       return;
     }
-
-    // check / request permission for steps
+    //check / request permission for steps
     bool? hasPermission = await _health.hasPermissions(
       [HealthDataType.STEPS],
       permissions: [HealthDataAccess.READ],
     );
-
-    if (hasPermission != true) {
+    if (hasPermission != true){
       bool granted = false;
-      try {
+      try{
         granted = await _health.requestAuthorization(
           [HealthDataType.STEPS],
           permissions: [HealthDataAccess.READ],
         );
-      } catch (e) {
+      } catch (e){
         debugPrint('Error requesting authorization: $e');
       }
-
-      if (!granted) {
+      if (!granted){
         debugPrint('Step permission not granted by user.');
-        setState(() {
+        setState((){
           _state = AppState.DATA_NOT_FETCHED;
           _isFetching = false;
         });
         return;
       }
     }
-
-    // fetch steps
-    try {
+    //fetch steps
+    try{
       steps = await _health.getTotalStepsInInterval(midnight, now);
-      debugPrint('Total steps today: $steps');
-    } catch (error) {
-      debugPrint("Exception in getTotalStepsInInterval: $error");
-    }
+      debugPrint('Totoal steps today: $steps');
 
-    // compute calories if we have weight
+    } catch (error){
+      debugPrint("Exception in getTotalStepsInINterval: $error");
+    }
+    //compute calories if we have weight
     double? calories;
-    if (steps != null && _latestWeight != null) {
+    if (steps != null && _latestWeight != null){
       calories = _calculateCaloriesFromSteps(steps, _latestWeight!);
     }
-
-    setState(() {
+    setState((){
       _totalSteps = steps ?? 0;
       _caloriesBurned = calories;
 
@@ -253,9 +233,9 @@ class _HealthTrackerScreenState extends State<HealthTrackerScreen> {
     });
   }
 
-  // Stub for sync button – keep your real implementation here if you had one
+  //stub for sync button -
   Future<void> _syncToSupabase() async {
-    if (_latestWeight == null) {
+    if(_latestWeight == null){
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please enter your weight before syncing.'),
@@ -264,63 +244,52 @@ class _HealthTrackerScreenState extends State<HealthTrackerScreen> {
       );
       return;
     }
-
     setState(() => _isSyncing = true);
 
-    try {
-      // 0️⃣ Create dateLogged BEFORE using it.
-      // ⬅️ NEW: UPSERT INSTEAD OF INSERT
+    try{
       final res = await _progressRepo.upsertTodayProgress(
         weight: _latestWeight!,
         caloriesBurned: (_caloriesBurned ?? 0).round(),
         stepsCount: _totalSteps,
       );
-
-// progressId now comes from the upsert result
       final progressId = res['progress_id'] as int;
       final dateLogged = res['date_logged'];
 
-
-      // 2️⃣ Build summary text (with date!)
       final summary = """
 Date: $dateLogged
 Weight: $_latestWeight kg
 Steps: $_totalSteps
 Calories: ${(_caloriesBurned ?? 0).round()}
-""";
 
-      // 3️⃣ Get embedding from Ollama
+""";
+//get embedding from ollama
       final embedding = await _embedService.generateEmbedding(summary);
 
-      // 4️⃣ Save embedding into user_progress_embeddings
       await _embedService.saveEmbeddingToSupabase(
         progressId: progressId,
         userId: supabase.auth.currentUser!.id,
         embedding: embedding,
       );
-
-      // 5️⃣ Badge logic
+      //badge logic
       await _badgeService.checkAllProgressBadges(
         stepsToday: _totalSteps,
         caloriesToday: (_caloriesBurned ?? 0).round(),
       );
-
       final newBadge = await _badgeRepo.getLatestBadge();
-      if (newBadge != null && mounted) {
+      if (newBadge != null && mounted){
         _showBadgePopup(context, newBadge);
       }
-
-      if (mounted) {
+      if (mounted){
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Synced to Supabase!'),
+            content: const Text('Synced to supabase!'),
             backgroundColor: Theme.of(context).colorScheme.primary,
           ),
         );
       }
-    } catch (e) {
+    }catch(e){
       debugPrint("Sync error: $e");
-      if (mounted) {
+      if (mounted){
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Sync failed: $e'),
@@ -328,18 +297,13 @@ Calories: ${(_caloriesBurned ?? 0).round()}
           ),
         );
       }
-    } finally {
+    } finally{
       if (mounted) setState(() => _isSyncing = false);
     }
   }
 
-
-
-
-
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context){
     final theme = Theme.of(context);
     final primary = theme.colorScheme.primary;
 
@@ -355,15 +319,12 @@ Calories: ${(_caloriesBurned ?? 0).round()}
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // STATUS
-            Text(
-              'Status: $_state',
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-            ),
+            //STATUS
+            Text('Status: $_state',
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
             const SizedBox(height: 16),
-
-            // STEPS CARD
+            //
             Card(
               elevation: 3,
               shape: RoundedRectangleBorder(
@@ -398,10 +359,9 @@ Calories: ${(_caloriesBurned ?? 0).round()}
                 ),
               ),
             ),
-
             const SizedBox(height: 16),
-
-            // WEIGHT CARD (user input)
+            //WEIGHT CARD
+            //Show Weight
             Card(
               elevation: 3,
               shape: RoundedRectangleBorder(
@@ -411,6 +371,7 @@ Calories: ${(_caloriesBurned ?? 0).round()}
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
                   children: [
+
                     const Icon(Icons.monitor_weight,
                         size: 36, color: Colors.blueAccent),
                     const SizedBox(width: 16),
@@ -419,7 +380,7 @@ Calories: ${(_caloriesBurned ?? 0).round()}
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Weight (kg)',
+                            'weight (kg)',
                             style: theme.textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
@@ -433,15 +394,15 @@ Calories: ${(_caloriesBurned ?? 0).round()}
                               const TextInputType.numberWithOptions(
                                   decimal: true),
                               decoration: const InputDecoration(
-                                hintText: 'Enter your weight in kg',
+                                hintText: 'Enter you weight in kg',
                                 border: OutlineInputBorder(),
                                 isDense: true,
                               ),
-                              onChanged: (value) {
+                              onChanged: (value){
                                 final parsed = double.tryParse(value);
                                 setState(() {
                                   _latestWeight = parsed;
-                                  if (parsed != null && _totalSteps > 0) {
+                                  if (parsed != null && _totalSteps > 0){
                                     _caloriesBurned = _calculateCaloriesFromSteps(
                                       _totalSteps,
                                       parsed,
@@ -455,20 +416,19 @@ Calories: ${(_caloriesBurned ?? 0).round()}
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            _latestWeight != null
-                                ? 'Current: ${_latestWeight!.toStringAsFixed(1)} kg'
-                                : 'Current: N/A',
-                            style: theme.textTheme.bodyMedium,
+                              _latestWeight != null
+                                  ? 'Current: ${_latestWeight!.toStringAsFixed(1)} kg'
+                                  : 'Current: N/A',
+                              style: theme.textTheme.bodyMedium
                           ),
                         ],
+
                       ),
                     ),
                   ],
                 ),
               ),
             ),
-
-            // CALORIES CARD (computed)
             Card(
               elevation: 3,
               shape: RoundedRectangleBorder(
@@ -505,18 +465,19 @@ Calories: ${(_caloriesBurned ?? 0).round()}
                 ),
               ),
             ),
-
             const SizedBox(height: 24),
+            //ACTION BUTTONS
 
-            // ACTION BUTTONS – Fetch + Sync
+
+
+            //fetch + sync buttons
             Row(
               children: [
                 Expanded(
                   child: ElevatedButton.icon(
                     icon: const Icon(Icons.directions_walk),
                     onPressed: _isFetching ? null : _fetchSteps,
-                    label:
-                    Text(_isFetching ? 'Fetching...' : 'Fetch Steps + Recalc'),
+                    label: Text(_isFetching ? 'Fetching...' : 'Fetch Steps'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primary,
                       foregroundColor: Colors.white,
@@ -532,39 +493,32 @@ Calories: ${(_caloriesBurned ?? 0).round()}
                   child: OutlinedButton.icon(
                     icon: const Icon(Icons.cloud_upload),
                     onPressed: _isSyncing ? null : _syncToSupabase,
-                    label:
-                    Text(_isSyncing ? 'Syncing...' : 'Sync to Supabase'),
+                    label: Text(_isSyncing ? 'Syncing...' : 'Sync to supabase'),
                     style: OutlinedButton.styleFrom(
                       side: BorderSide(color: primary),
                       foregroundColor: primary,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadiusGeometry.circular(12),
                       ),
                     ),
                   ),
                 ),
               ],
             ),
-
             const SizedBox(height: 24),
-
-            // 🔥 Add this
             ElevatedButton(
-              onPressed: () async {
+              onPressed: () async{
                 final batchGen = BatchEmbeddingGenerator(
                   progressRepo: ProgressRepository(),
                   embeddingService: EmbeddingService(),
                   client: supabase,
                 );
-
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Generating embeddings…")),
+                  const SnackBar(content: Text("Generating embeddings...")),
                 );
-
                 await batchGen.generateAllMissingEmbeddings();
-
-                if (mounted) {
+                if (mounted){
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text("Batch embeddings generated!"),
@@ -573,16 +527,14 @@ Calories: ${(_caloriesBurned ?? 0).round()}
                   );
                 }
               },
-              child: const Text("Generate All Embeddings"),
+              child: const Text("Generate all embeddings"),
             ),
             const SizedBox(height: 16),
 
-
-            // Optional raw data list (still here, even if empty for now)
             Expanded(
               child: ListView.builder(
                 itemCount: _healthData.length,
-                itemBuilder: (context, index) {
+                itemBuilder: (context, index){
                   final point = _healthData[index];
                   final value = point.value;
                   final numeric = value is NumericHealthValue
@@ -610,5 +562,6 @@ Calories: ${(_caloriesBurned ?? 0).round()}
     );
   }
 }
+
 
 

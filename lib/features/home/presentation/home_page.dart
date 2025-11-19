@@ -7,9 +7,9 @@ import '../../../core/supabase/supabase_client.dart';
 import 'ai_coach_chat_screen.dart';
 
 final profileProvider = FutureProvider.family<Map<String, dynamic>?, String?>((
-  ref,
-  userId,
-) async {
+    ref,
+    userId,
+    ) async {
   if (userId == null) return null;
   final data = await supabase
       .from('profiles')
@@ -83,6 +83,12 @@ class HomePage extends ConsumerWidget {
               ),
               SliverToBoxAdapter(
                 child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+                  child: _BadgeRow(),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: Padding(
                   padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
                   child: _Highlights(),
                 ),
@@ -99,8 +105,8 @@ class HomePage extends ConsumerWidget {
             MaterialPageRoute(builder: (context) => const AiCoachChatScreen()),
           );
         },
-      backgroundColor: Theme.of(context).colorScheme.primary,
-      child: const Icon(Icons.chat_bubble_outline_rounded, color: Colors.white),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        child: const Icon(Icons.chat_bubble_outline_rounded, color: Colors.white),
       ),
     );
   }
@@ -486,9 +492,9 @@ class _BadgeRow extends StatelessWidget{
                     children: [
                       //Badge image
                       Image.network(badge["icon_url"],
-                      height: 55,
-                      width: 55,
-                      fit: BoxFit.contain,
+                        height: 55,
+                        width: 55,
+                        fit: BoxFit.contain,
                       ),
                       const SizedBox(height: 4),
                       //Badge name

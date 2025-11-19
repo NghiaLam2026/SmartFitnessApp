@@ -65,7 +65,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/signup', builder: (context, state) => const SignupPage()),
       GoRoute(
         path: '/home',
-        builder: (context, state) => const HomePage(),
+        builder: (context, state) => HomePage(),
         routes: [
           GoRoute(
             path: 'events',

@@ -6,9 +6,8 @@ class ProgressRepository {
 
   ProgressRepository({SupabaseClient? client}) : _client = client ?? supabase;
 
-  /// -----------------------------------------------------------
-  /// Add a new progress entry (Steps + Calories + Weight)
-  /// -----------------------------------------------------------
+  //add a new progress entry steps calories and weight
+
   Future<void> addProgress({
     required double weight,
     required int caloriesBurned,
@@ -22,26 +21,25 @@ class ProgressRepository {
       'weight': weight,
       'calories_burned': caloriesBurned,
       'steps_count': stepsCount,
-      // date_logged defaults to NOW() in Supabase
+      //date_looged defaults to NOW() in supabase
     });
   }
 
-  /// -----------------------------------------------------------
-  /// Fetch all progress entries for current user
-  /// -----------------------------------------------------------
+  //Fetch all progress progress entries for current user
   Future<List<Map<String, dynamic>>> getProgress() async {
     final user = _client.auth.currentUser;
-    if (user == null) throw Exception("User not logged in.");
+    if (user == null) throw Exception("User not logged in");
 
     final response = await _client
         .from('user_progress')
         .select()
         .eq('user_id', user.id)
         .order('date_logged', ascending: false);
-
     return List<Map<String, dynamic>>.from(response);
   }
+
   Future<Map<String, dynamic>> upsertTodayProgress({
+
     required double weight,
     required int caloriesBurned,
     required int stepsCount,
@@ -65,24 +63,21 @@ class ProgressRepository {
     }, onConflict: 'user_id,date_logged')
         .select()
         .single();
-
     return Map<String, dynamic>.from(response);
   }
 
+//update a specific progress record
 
-  /// -----------------------------------------------------------
-  /// Update a specific progress record (optional)
-  /// -----------------------------------------------------------
-  Future<void> updateProgress(
-      int progressId, double weight, int caloriesBurned, int stepsCount) async {
+  Future<void> updateProgress(int progressId, double weight, int caloriesBurned,
+      int stepsCount) async {
     final user = _client.auth.currentUser;
-    if (user == null) throw Exception("User not logged in.");
+    if (user == null) throw Exception("User not logged in");
 
     await _client.from('user_progress').update({
       'weight': weight,
       'calories_burned': caloriesBurned,
       'steps_count': stepsCount,
+
     }).eq('progress_id', progressId).eq('user_id', user.id);
   }
 }
-

@@ -20,11 +20,11 @@ class BadgeRepository {
 
     //check if this badge is already earned
     final existing = await _client
-      .from('user_badges')
-      .select()
-      .eq('user_id', user.id)
-      .eq('badge_name', badgeName)
-      .maybeSingle();
+        .from('user_badges')
+        .select()
+        .eq('user_id', user.id)
+        .eq('badge_name', badgeName)
+        .maybeSingle();
 
     //alreadt earned -> dont insert again
     if (existing != null) return false;
@@ -47,10 +47,10 @@ class BadgeRepository {
     if (user == null) throw Exception("User not logged in");
 
     return await _client
-      .from('user_badges')
-      .select()
-      .eq('user_id', user.id)
-      .order('unlocked_at', ascending: false);
+        .from('user_badges')
+        .select()
+        .eq('user_id', user.id)
+        .order('unlocked_at', ascending: false);
   }
   //Fetch the most recent badge the user unlocked
   Future<Map<String, dynamic>?> getLatestBadge() async{
@@ -58,12 +58,12 @@ class BadgeRepository {
     if (user == null) throw Exception("User not logged in");
 
     final response = await _client
-      .from('user_badges')
-      .select()
-      .eq('user_id', user.id)
-      .order('unlocked_at', ascending: false)
-      .limit(1)
-      .maybeSingle();
+        .from('user_badges')
+        .select()
+        .eq('user_id', user.id)
+        .order('unlocked_at', ascending: false)
+        .limit(1)
+        .maybeSingle();
     return response;
   }
 }
