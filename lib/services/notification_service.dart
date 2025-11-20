@@ -281,6 +281,15 @@ class NotificationService {
 
       final deviceName = await _resolveDeviceName();
 
+      // Check if this is a new token for this user
+      final existingTokens = await supabase
+          .from('user_notification_tokens')
+          .select('token')
+          .eq('user_id', userId)
+          .eq('token', token);
+
+      final isNewToken = existingTokens.isEmpty;
+
       await supabase.from('user_notification_tokens').upsert(
         {
           'user_id': userId,
@@ -291,9 +300,29 @@ class NotificationService {
       );
 
       debugPrint('NotificationService: Token persisted for $deviceName');
+
+      // Send welcome notification if this is a new token
+      if (isNewToken) {
+        await _sendWelcomeNotification(userId);
+      }
     } catch (error, stackTrace) {
       debugPrint('NotificationService: Failed to persist token - $error');
       FlutterError.reportError(FlutterErrorDetails(exception: error, stack: stackTrace));
+    }
+  }
+
+  /// Send welcome notification to new users
+  Future<void> _sendWelcomeNotification(String userId) async {
+    try {
+      // Call the database function to send welcome notification
+      await supabase.rpc('send_welcome_notification', params: {
+        'p_user_id': userId,
+      });
+
+      debugPrint('NotificationService: Welcome notification scheduled for user $userId');
+    } catch (e) {
+      debugPrint('NotificationService: Failed to send welcome notification - $e');
+      // Don't throw - welcome notification is not critical
     }
   }
 
