@@ -18,7 +18,7 @@ class EmbeddingService {
 
   static String get ollamaUrl{
     if (useEmulator){
-      return 'http:10.0.2.2:11434/api/embeddings';
+      return 'http://10.0.2.2:11434/api/embeddings';
     }
     if (useUsbDevice){
       return 'http://127.0.0.1:11434/api/embeddings';
