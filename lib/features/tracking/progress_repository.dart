@@ -23,6 +23,14 @@ class ProgressRepository {
       'steps_count': stepsCount,
       //date_looged defaults to NOW() in supabase
     });
+
+    // Process pending notifications for this user (milestone triggers)
+    try {
+      await _client.rpc('process_notification_jobs');
+    } catch (e) {
+      print('⚠️ Error processing notifications: $e');
+      // Don't throw - notifications shouldn't block workout logging
+    }
   }
 
   //Fetch all progress progress entries for current user
