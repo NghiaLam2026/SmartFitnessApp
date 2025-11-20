@@ -21,6 +21,14 @@ class ProgressRepository {
       'calories_burned': caloriesBurned,
       'steps_count': stepsCount,
     });
+
+    // Process pending notifications for this user (milestone triggers)
+    try {
+      await _client.rpc('process_notification_jobs');
+    } catch (e) {
+      print('⚠️ Error processing notifications: $e');
+      // Don't throw - notifications shouldn't block workout logging
+    }
   }
   //fetch all progress entries for the current user
   Future<List<Map<String, dynamic>>> getProgress() async {
