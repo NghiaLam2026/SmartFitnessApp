@@ -24,6 +24,7 @@
     "newsapi": "^2.4.1"
   },
   "devDependencies": {
-    "@types/node": "^20.10.0"
+    "@types/node": "^20.10.0",
+    "supabase": "^2.58.5"
   }
 }

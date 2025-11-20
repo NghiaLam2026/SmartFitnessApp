@@ -37,16 +37,17 @@ dependencies:
   flutter_dotenv: ^5.1.0
   flutter_secure_storage: ^9.0.0
   dio: ^5.4.0
-  pedometer: ^4.0.0
+  permission_handler: ^12.0.1
   video_player: ^2.9.2
   chewie: ^1.8.5
   webview_flutter: ^4.10.0
   url_launcher: ^6.3.0
   youtube_player_flutter: ^9.1.0
   uuid: ^4.3.3
+  health: ^13.2.1
+  http: ^1.6.0
   google_places_autocomplete_text_field: ^2.0.3
   geolocator: ^12.0.0
-  permission_handler: ^11.3.1
   firebase_core: ^2.24.2
   firebase_messaging: ^14.7.10
   flutter_local_notifications: ^17.1.2

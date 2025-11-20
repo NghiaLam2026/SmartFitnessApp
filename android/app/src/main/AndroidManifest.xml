@@ -1,20 +1,46 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.smart_fitness_app">
+
+    <!-- 🌐 Network + background -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- 🏃 Required for step count & activity recognition -->
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+
+    <!-- 📍 Optional (only if you show workout distances / GPS routes) -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
+    <!-- 🩺 Health Connect permissions for the data you’ll read/write -->
+    <uses-permission android:name="android.permission.health.READ_STEPS" />
+    <uses-permission android:name="android.permission.health.WRITE_STEPS" />
+    <uses-permission android:name="android.permission.health.READ_HEART_RATE" />
+    <uses-permission android:name="android.permission.health.WRITE_HEART_RATE" />
+    <uses-permission android:name="android.permission.READ_ACTIVE_ENERGY_BURNED" />
+    <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_HISTORY" />
+    <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND"/>
+
+
     <application
-        android:label="smart_fitness_app"
         android:name="${applicationName}"
+        android:label="Smart Fitness App"
         android:icon="@mipmap/ic_launcher">
+        <!-- 🧩 Main Flutter Activity -->
+        <meta-data android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyAXfKpG8TAL8HaVG3eMoMfKeNcekmmevWA"/>
                 <!-- Google Places API Key -->
-                <!-- 
+                <!--
                     NOTE: Google Places API is now called through our backend server.
                     The API key is stored securely on the backend and never exposed to the client.
-                    
+
                     If you need Google Maps SDK features (not just Places API), uncomment below
                     and configure the key in android/local.properties or as an environment variable.
-                    
+
                     IMPORTANT: If you enable this, restrict the API key in Google Cloud Console:
                     1. Go to Google Cloud Console > APIs & Services > Credentials
                     2. Select your API key
@@ -23,47 +49,48 @@
                     4. Under "API restrictions": Restrict to only needed APIs
                 -->
                 <!--
-                <meta-data 
+                <meta-data
                     android:name="com.google.android.geo.API_KEY"
                     android:value="${googlePlacesApiKey}"/>
                 -->
         <activity
             android:name=".MainActivity"
-            android:exported="true"
-            android:launchMode="singleTop"
-            android:taskAffinity=""
-            android:theme="@style/LaunchTheme"
-            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
-            android:hardwareAccelerated="true"
-            android:windowSoftInputMode="adjustResize">
-            <!-- Specifies an Android theme to apply to this Activity as soon as
-                 the Android process has started. This theme is visible to the user
-                 while the Flutter UI initializes. After that, this theme continues
-                 to determine the Window background behind the Flutter UI. -->
-            <meta-data
-              android:name="io.flutter.embedding.android.NormalTheme"
-              android:resource="@style/NormalTheme"
-              />
+            android:exported="true">
+
+            <!-- Intention to show Health Connect permission screen -->
             <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
+                <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <!-- Don't delete the meta-data below.
-             This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
+
+
+        <!-- 🔗 Required so Health Connect can link to your privacy policy -->
+        <activity-alias
+            android:name="ViewPermissionUsageActivity"
+            android:exported="true"
+            android:targetActivity=".MainActivity"
+            android:permission="android.permission.START_VIEW_PERMISSION_USAGE">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+                <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
+            </intent-filter>
+        </activity-alias>
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
     </application>
-    <!-- Required to query activities that can process text, see:
-         https://developer.android.com/training/package-visibility and
-         https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.
 
-         In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
+
+    <!-- 🧭 Allows checking whether Health Connect is installed -->
     <queries>
+        <package android:name="com.google.android.apps.healthdata" />
         <intent>
-            <action android:name="android.intent.action.PROCESS_TEXT"/>
-            <data android:mimeType="text/plain"/>
+            <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
         </intent>
     </queries>
 </manifest>

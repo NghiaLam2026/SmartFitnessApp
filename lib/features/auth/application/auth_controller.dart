@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:gotrue/gotrue.dart' show AuthException;
 import '../../../core/supabase/supabase_client.dart';
 import '../data/auth_repository.dart';
 import '../data/auth_repository_impl.dart';

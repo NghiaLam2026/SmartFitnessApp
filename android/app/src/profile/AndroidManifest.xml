@@ -1,7 +1,85 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- The INTERNET permission is required for development. Specifically,
-         the Flutter tool needs it to communicate with the running application
-         to allow setting breakpoints, to provide hot reload, etc.
-    -->
-    <uses-permission android:name="android.permission.INTERNET"/>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.smart_fitness_app">
+
+    <!-- 🌐 Network + background -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- 🏃 Required for step count & activity recognition -->
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+
+    <!-- 📍 Optional (GPS for workouts) -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
+    <!-- 🩺 Health Connect permissions -->
+    <uses-permission android:name="android.permission.health.READ_STEPS" />
+    <uses-permission android:name="android.permission.health.WRITE_STEPS" />
+
+    <uses-permission android:name="android.permission.health.READ_ACTIVE_ENERGY_BURNED" />
+    <uses-permission android:name="android.permission.health.WRITE_ACTIVE_ENERGY_BURNED" />
+
+    <uses-permission android:name="android.permission.health.READ_HEART_RATE" />
+    <uses-permission android:name="android.permission.health.WRITE_HEART_RATE" />
+    <uses-permission android:name="android.permission.healthREAD_HEALTH_DATA_IN_BACKGROUND" />
+
+    <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_HISTORY" />
+
+    <!-- ❌ Removed because it’s INVALID -->
+    <!-- <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND"/> -->
+
+    <application
+        android:name="${applicationName}"
+        android:label="Smart Fitness App"
+        android:icon="@mipmap/ic_launcher"
+        android:enableOnBackInvokedCallback="true">
+
+        <!-- Main Flutter Activity -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+
+            <!-- Health Connect permission screen -->
+            <intent-filter>
+                <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- REQUIRED Health Connect permission activity -->
+        <activity
+            android:name="androidx.health.connect.client.impl.permission.HealthConnectPermissionActivity"
+            android:exported="false" />
+
+        <!-- Privacy policy / permission usage routing -->
+        <activity-alias
+            android:name="ViewPermissionUsageActivity"
+            android:exported="true"
+            android:targetActivity=".MainActivity"
+            android:permission="android.permission.START_VIEW_PERMISSION_USAGE">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+                <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
+            </intent-filter>
+        </activity-alias>
+
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+
+    </application>
+
+    <!-- Health Connect install detection -->
+    <queries>
+        <package android:name="com.google.android.apps.healthdata" />
+        <intent>
+            <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+        </intent>
+    </queries>
+
 </manifest>

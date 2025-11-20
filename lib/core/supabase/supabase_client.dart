@@ -27,6 +27,9 @@ Future<void> initSupabase() async {
   final defineKey = const String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: 'public-anon-key');
   final anonKey = (envKey != null && envKey.isNotEmpty) ? envKey : defineKey;
 
+  debugPrint('🔧 Supabase URL: $url');
+  debugPrint('🔧 Supabase Key: ${anonKey.substring(0, 20)}...');
+
   await Supabase.initialize(
     url: url,
     anonKey: anonKey,

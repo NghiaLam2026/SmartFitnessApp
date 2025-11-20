@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:smart_fitness_app/features/tracking/badges/badge_repository.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../../core/supabase/supabase_client.dart';
 import '../../../services/notification_service.dart';
 import 'package:smart_fitness_app/features/tracking/mock_test_tracker_screen.dart';
+import 'ai_coach_chat_screen.dart';
 
 final profileProvider = FutureProvider.family<Map<String, dynamic>?, String?>((
-  ref,
-  userId,
-) async {
+    ref,
+    userId,
+    ) async {
   if (userId == null) return null;
   final data = await supabase
       .from('profiles')
@@ -89,6 +91,12 @@ class HomePage extends ConsumerWidget {
               ),
               SliverToBoxAdapter(
                 child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+                  child: _BadgeRow(),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: Padding(
                   padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
                   child: _Highlights(),
                 ),
@@ -96,6 +104,17 @@ class HomePage extends ConsumerWidget {
             ],
           ),
         ),
+      ),
+      //Add this
+      floatingActionButton: FloatingActionButton(
+        onPressed: (){
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AiCoachChatScreen()),
+          );
+        },
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        child: const Icon(Icons.chat_bubble_outline_rounded, color: Colors.white),
       ),
     );
   }
@@ -473,5 +492,84 @@ class _HighlightCard extends StatelessWidget {
     }
 
     return card;
+  }
+}
+
+class _BadgeRow extends StatelessWidget{
+  const _BadgeRow({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context){
+    final badgeRepo = BadgeRepository();
+
+    return FutureBuilder(
+      future: badgeRepo.getAllBadges(),
+      builder: (context, snapshot){
+        //while loading badges
+        if (snapshot.connectionState == ConnectionState.waiting){
+          return const SizedBox(
+            height: 80,
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+        //No badges yet
+        if (!snapshot.hasData || (snapshot.data as List).isEmpty){
+          return const SizedBox(
+            height: 80,
+            child: Center(
+              child: Text(
+                "No Badges yet - keep going!",
+                style: TextStyle(fontSize: 16),
+              ),
+            ),
+          );
+        }
+        final badges = snapshot.data as List<Map<String, dynamic>>;
+        //Build badge list
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "My Badges",
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 80,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: badges.length,
+                separatorBuilder:  (_, __) => const SizedBox(width: 14),
+                itemBuilder: (context, i){
+                  final badge = badges[i];
+                  return Column(
+                    children: [
+                      //Badge image
+                      Image.network(badge["icon_url"],
+                        height: 55,
+                        width: 55,
+                        fit: BoxFit.contain,
+                      ),
+                      const SizedBox(height: 4),
+                      //Badge name
+                      Text(
+                        badge["badge_name"],
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            )
+          ],
+        );
+      },
+    );
   }
 }
