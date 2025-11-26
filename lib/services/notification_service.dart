@@ -11,6 +11,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/supabase/supabase_client.dart';
 
+import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
+
 /// Background message handler - must be a top-level function
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   debugPrint('Handling background message: ${message.messageId}');
@@ -72,6 +75,9 @@ class NotificationService {
 
       // Request permissions for iOS
       await _requestPermissions();
+
+      // Initialize timezones
+      tz.initializeTimeZones();
 
       // Initialize local notifications
       await _configureLocalNotifications();
@@ -386,6 +392,59 @@ class NotificationService {
       }
     }
     return map;
+  }
+
+  /// Schedule a daily motivation notification locally
+  Future<void> scheduleDailyMotivation({required int hour, required int minute}) async {
+    // Cancel existing if any
+    await _localNotifications.cancel(1001); // ID 1001 for daily motivation
+
+    // Define notification details
+    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+      'daily_motivation_channel',
+      'Daily Motivation',
+      channelDescription: 'Daily motivational quotes',
+      importance: Importance.high,
+      priority: Priority.high,
+    );
+
+    const DarwinNotificationDetails iosDetails = DarwinNotificationDetails();
+
+    const NotificationDetails details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    // Calculate next instance of the time
+    final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
+    tz.TZDateTime scheduledDate = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      now.day,
+      hour,
+      minute,
+    );
+
+    if (scheduledDate.isBefore(now)) {
+      scheduledDate = scheduledDate.add(const Duration(days: 1));
+    }
+
+    // Schedule it
+    await _localNotifications.zonedSchedule(
+      1001,
+      'Daily Motivation 🚀',
+      'Time to crush your goals today! Let\'s get moving.',
+      scheduledDate,
+      details,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: DateTimeComponents.time, // Repeats daily at this time
+      payload: 'route=/home',
+    );
+    
+    debugPrint('Scheduled daily motivation for $hour:$minute');
   }
 
   /// Subscribe to a notification topic
