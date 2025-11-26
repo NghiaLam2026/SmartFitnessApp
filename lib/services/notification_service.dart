@@ -314,12 +314,21 @@ class NotificationService {
   /// Send welcome notification to new users
   Future<void> _sendWelcomeNotification(String userId) async {
     try {
-      // Call the database function to send welcome notification
-      await supabase.rpc('send_welcome_notification', params: {
-        'p_user_id': userId,
-      });
+      // Directly call the Edge Function to send welcome notification
+      await supabase.functions.invoke(
+        'quick-api',
+        body: {
+          'user_id': userId,
+          'kind': 'event_notification',
+          'payload': {
+            'title': '🎉 Welcome to Smart Fitness!',
+            'body': 'You\'re all set! Let\'s get started on your fitness journey.',
+            'route': '/home',
+          },
+        },
+      );
 
-      debugPrint('NotificationService: Welcome notification scheduled for user $userId');
+      debugPrint('NotificationService: Welcome notification sent for user $userId');
     } catch (e) {
       debugPrint('NotificationService: Failed to send welcome notification - $e');
       // Don't throw - welcome notification is not critical

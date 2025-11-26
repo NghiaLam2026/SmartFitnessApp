@@ -46,6 +46,49 @@ class SupabaseWorkoutRepository implements WorkoutRepository {
       await _addExerciseToWorkout(planId, exercise);
     }
 
+    // Check for milestone notifications (Client-side trigger)
+    try {
+      final count = await _client
+          .from('workouts')
+          .count(CountOption.exact)
+          .eq('user_id', user.id);
+      
+      String? title;
+      String? body;
+      
+      if (count == 1) {
+        title = 'First Workout Created! 🚀';
+        body = 'You\'ve taken the first step! Now let\'s crush it.';
+      } else if (count == 3) {
+        title = '3 Workouts Planned! 💪';
+        body = 'You\'re building a solid routine. Keep it up!';
+      } else if (count == 5) {
+        title = '5 Workouts Strong! 🔥';
+        body = 'Consistency is key, and you\'re nailing it!';
+      } else if (count > 0 && count % 10 == 0) {
+        title = '🏆 $count Workouts Created!';
+        body = 'You are unstoppable! Keep pushing your limits.';
+      }
+      
+      if (title != null && body != null) {
+        await _client.functions.invoke(
+          'quick-api',
+          body: {
+            'user_id': user.id,
+            'kind': 'achievement',
+            'payload': {
+              'title': title,
+              'body': body,
+              'route': '/home/workouts',
+            },
+          },
+        );
+      }
+    } catch (e) {
+      // Ignore notification errors so we don't block workout creation
+      print('Error sending milestone notification: $e');
+    }
+
     return planId;
   }
 
