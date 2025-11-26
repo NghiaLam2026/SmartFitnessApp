@@ -19,7 +19,7 @@ BEGIN
 
       -- Call Edge Function to send notification
       PERFORM net.http_post(
-        'https://' || current_setting('app.supabase_url') || '/functions/v1/send-push-notification',
+        'https://' || current_setting('app.supabase_url') || '/functions/v1/quickapi',
         jsonb_build_object(
           'user_id', v_job.user_id,
           'kind', v_job.kind,
