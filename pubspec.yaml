@@ -44,14 +44,14 @@ dependencies:
   url_launcher: ^6.3.0
   youtube_player_flutter: ^9.1.0
   uuid: ^4.3.3
-  health: ^13.2.1
+  health: ^13.1.4
   http: ^1.6.0
   google_places_autocomplete_text_field: ^2.0.3
   geolocator: ^12.0.0
   firebase_core: ^2.24.2
   firebase_messaging: ^14.7.10
   flutter_local_notifications: ^17.1.2
-  device_info_plus: ^10.1.0
+  device_info_plus: ^12.2.0
   package_info_plus: ^8.1.0
   # TODO: Add OneSignal once account is set up
   # onesignal_flutter: ^5.0.0
