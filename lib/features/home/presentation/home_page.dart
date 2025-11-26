@@ -141,7 +141,7 @@ class HomePage extends ConsumerWidget {
 
       // Step 2: Call the Edge Function to send FCM notification
       await supabase.functions.invoke(
-        'send-push-notification',
+        'quick-api',
         body: {
           'user_id': userId,
           'kind': 'achievement',
