@@ -464,7 +464,7 @@ class NotificationService {
   /// Start background job processor to handle pending notifications
   void _startBackgroundJobProcessor() {
     // Run every 60 seconds to check for pending notification jobs
-    _backgroundJobTimer = Timer.periodic(const Duration(seconds: 60), (_) {
+    _backgroundJobTimer = Timer.periodic(const Duration(seconds: 25), (_) {
       _processBackgroundNotificationJobs();
     });
     debugPrint('NotificationService: Background job processor started');
