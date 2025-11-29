@@ -72,7 +72,7 @@ class SupabaseWorkoutRepository implements WorkoutRepository {
       
       if (title != null && body != null) {
         await _client.functions.invoke(
-          'quick-api',
+          'send-push-notification',
           body: {
             'user_id': user.id,
             'kind': 'achievement',

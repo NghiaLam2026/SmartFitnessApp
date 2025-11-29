@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
@@ -7,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/supabase/supabase_client.dart';
@@ -31,6 +33,7 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   bool _initialised = false;
+  Timer? _backgroundJobTimer;
 
   /// Set the app context for navigation
   static void setContext(BuildContext context) {
@@ -78,6 +81,18 @@ class NotificationService {
 
       // Initialize timezones
       tz.initializeTimeZones();
+      
+      // For testing: Force Eastern Time
+      const String timeZoneName = 'America/New_York';
+      
+      try {
+        tz.setLocalLocation(tz.getLocation(timeZoneName));
+        debugPrint('Timezone set to: $timeZoneName');
+      } catch (e) {
+        debugPrint('Error setting location for $timeZoneName: $e');
+        // Fallback to UTC if location not found
+        tz.setLocalLocation(tz.getLocation('UTC'));
+      }
 
       // Initialize local notifications
       await _configureLocalNotifications();
@@ -101,6 +116,9 @@ class NotificationService {
 
       // Check for initial message (app opened from notification tap)
       await _handleInitialMessage();
+
+      // Start background job processor to handle pending notifications
+      _startBackgroundJobProcessor();
 
       debugPrint('Notification service initialized successfully');
     } catch (error, stackTrace) {
@@ -320,23 +338,17 @@ class NotificationService {
   /// Send welcome notification to new users
   Future<void> _sendWelcomeNotification(String userId) async {
     try {
-      // Directly call the Edge Function to send welcome notification
-      await supabase.functions.invoke(
-        'quick-api',
-        body: {
-          'user_id': userId,
-          'kind': 'event_notification',
-          'payload': {
-            'title': '🎉 Welcome to Smart Fitness!',
-            'body': 'You\'re all set! Let\'s get started on your fitness journey.',
-            'route': '/home',
-          },
+      // Call the Supabase function to create a notification job
+      await supabase.rpc(
+        'send_welcome_notification',
+        params: {
+          'p_user_id': userId,
         },
       );
 
-      debugPrint('NotificationService: Welcome notification sent for user $userId');
+      debugPrint('NotificationService: Welcome notification job created for user $userId');
     } catch (e) {
-      debugPrint('NotificationService: Failed to send welcome notification - $e');
+      debugPrint('NotificationService: Failed to create welcome notification job - $e');
       // Don't throw - welcome notification is not critical
     }
   }
@@ -394,57 +406,39 @@ class NotificationService {
     return map;
   }
 
-  /// Schedule a daily motivation notification locally
+  /// Schedule daily motivation via Supabase FCM (uses pg_cron to send notifications)
   Future<void> scheduleDailyMotivation({required int hour, required int minute}) async {
-    // Cancel existing if any
-    await _localNotifications.cancel(1001); // ID 1001 for daily motivation
+    try {
+      debugPrint('Saving daily motivation preference to Supabase: $hour:${minute.toString().padLeft(2, '0')}');
 
-    // Define notification details
-    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-      'daily_motivation_channel',
-      'Daily Motivation',
-      channelDescription: 'Daily motivational quotes',
-      importance: Importance.high,
-      priority: Priority.high,
-    );
+      final userId = Supabase.instance.client.auth.currentUser?.id;
+      if (userId == null) {
+        debugPrint('❌ No user logged in');
+        return;
+      }
 
-    const DarwinNotificationDetails iosDetails = DarwinNotificationDetails();
+      // Call Supabase RPC to save the preference
+      final result = await supabase.rpc(
+        'set_daily_motivation_time',
+        params: {
+          'p_user_id': userId,
+          'p_hour': hour,
+          'p_minute': minute,
+        },
+      );
 
-    const NotificationDetails details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
+      debugPrint('✅ Daily motivation saved via Supabase');
+      debugPrint('Response: $result');
 
-    // Calculate next instance of the time
-    final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
-    tz.TZDateTime scheduledDate = tz.TZDateTime(
-      tz.local,
-      now.year,
-      now.month,
-      now.day,
-      hour,
-      minute,
-    );
+      // Also save locally for app reference
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('motivation_hour', hour);
+      await prefs.setInt('motivation_minute', minute);
 
-    if (scheduledDate.isBefore(now)) {
-      scheduledDate = scheduledDate.add(const Duration(days: 1));
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error saving daily motivation: $e');
+      debugPrint('Stack trace: $stackTrace');
     }
-
-    // Schedule it
-    await _localNotifications.zonedSchedule(
-      1001,
-      'Daily Motivation 🚀',
-      'Time to crush your goals today! Let\'s get moving.',
-      scheduledDate,
-      details,
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: DateTimeComponents.time, // Repeats daily at this time
-      payload: 'route=/home',
-    );
-    
-    debugPrint('Scheduled daily motivation for $hour:$minute');
   }
 
   /// Subscribe to a notification topic
@@ -464,6 +458,83 @@ class NotificationService {
       debugPrint('NotificationService: Unsubscribed from topic: $topic');
     } catch (e) {
       debugPrint('Error unsubscribing from topic $topic: $e');
+    }
+  }
+
+  /// Start background job processor to handle pending notifications
+  void _startBackgroundJobProcessor() {
+    // Run every 60 seconds to check for pending notification jobs
+    _backgroundJobTimer = Timer.periodic(const Duration(seconds: 60), (_) {
+      _processBackgroundNotificationJobs();
+    });
+    debugPrint('NotificationService: Background job processor started');
+  }
+
+  /// Stop background job processor
+  void stopBackgroundJobProcessor() {
+    _backgroundJobTimer?.cancel();
+    _backgroundJobTimer = null;
+    debugPrint('NotificationService: Background job processor stopped');
+  }
+
+  /// Process pending notification jobs and send via FCM
+  Future<void> _processBackgroundNotificationJobs() async {
+    try {
+      debugPrint('NotificationService: Checking for pending notification jobs...');
+
+      final userId = Supabase.instance.client.auth.currentUser?.id;
+      if (userId == null) {
+        debugPrint('NotificationService: No authenticated user, skipping job processing');
+        return;
+      }
+
+      // Query pending notification jobs
+      final pendingJobs = await supabase
+          .from('notification_jobs')
+          .select('id, user_id, kind, payload')
+          .eq('status', 'pending')
+          .lte('run_at', DateTime.now().toUtc().toIso8601String());
+
+      if (pendingJobs.isEmpty) {
+        debugPrint('NotificationService: No pending jobs found');
+        return;
+      }
+
+      debugPrint('NotificationService: Found ${pendingJobs.length} pending jobs');
+
+      // Process each job
+      for (final job in pendingJobs) {
+        try {
+          final jobId = job['id'] as String;
+          final jobUserId = job['user_id'] as String;
+          final kind = job['kind'] as String;
+          final payload = job['payload'] as Map<String, dynamic>;
+
+          // Call Edge Function to send FCM notification
+          await supabase.functions.invoke(
+            'quick-api',
+            body: {
+              'user_id': jobUserId,
+              'kind': kind,
+              'payload': payload,
+            },
+          );
+
+          // Mark job as completed
+          await supabase
+              .from('notification_jobs')
+              .update({'status': 'completed', 'processed_at': DateTime.now().toUtc().toIso8601String()})
+              .eq('id', jobId);
+
+          debugPrint('NotificationService: Completed notification job $jobId');
+        } catch (e) {
+          debugPrint('NotificationService: Error processing job: $e');
+          // Job will remain pending and be retried on next run
+        }
+      }
+    } catch (e, stackTrace) {
+      debugPrint('NotificationService: Error processing background jobs: $e');
+      debugPrint('Stack trace: $stackTrace');
     }
   }
 }
