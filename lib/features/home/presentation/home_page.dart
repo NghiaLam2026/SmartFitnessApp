@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:smart_fitness_app/features/tracking/badges/badge_repository.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../../core/supabase/supabase_client.dart';
+import '../../../services/notification_service.dart';
+import 'package:smart_fitness_app/features/tracking/mock_test_tracker_screen.dart';
 import 'ai_coach_chat_screen.dart';
 
 final profileProvider = FutureProvider.family<Map<String, dynamic>?, String?>((
@@ -47,6 +49,12 @@ class HomePage extends ConsumerWidget {
         title: const Text('Smart Fitness'),
         elevation: 0,
         actions: [
+          // Debug: Test notification button
+          IconButton(
+            onPressed: () => _testNotification(context, auth.user?.id),
+            icon: const Icon(Icons.notifications_active_rounded),
+            tooltip: 'Test notification',
+          ),
           IconButton(
             onPressed: () async {
               await context.push('/profile');
@@ -109,6 +117,55 @@ class HomePage extends ConsumerWidget {
         child: const Icon(Icons.chat_bubble_outline_rounded, color: Colors.white),
       ),
     );
+  }
+
+  /// Test notification - trigger achievement notification
+  Future<void> _testNotification(BuildContext context, String? userId) async {
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No user logged in')),
+      );
+      return;
+    }
+
+    try {
+      // Step 1: Call the database trigger function to insert notification record
+      await supabase.rpc(
+        'trigger_achievement',
+        params: {
+          'p_user_id': userId,
+          'p_achievement_name': 'Break the Streak',
+          'p_achievement_description': 'Get off your phone and get moving!',
+        },
+      );
+
+      // Step 2: Call the Edge Function to send FCM notification
+      await supabase.functions.invoke(
+        'quick-api',
+        body: {
+          'user_id': userId,
+          'kind': 'achievement',
+          'payload': {
+            'title': 'Achievement Unlocked!',
+            'body': 'Break the Streak - You are on fire! Keep up the momentum!',
+            'route': '/home/achievements',
+            'data': {'achievement_name': 'Break the Streak'},
+          },
+        },
+      );
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Test notification sent!')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
   }
 }
 

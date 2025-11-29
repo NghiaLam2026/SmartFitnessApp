@@ -24,6 +24,7 @@ import '../features/wellness/presentation/meditation_page.dart';
 import '../features/wellness/presentation/mood_calendar_page.dart';
 import 'package:smart_fitness_app/features/events/presentation/event_detail_screen.dart';
 import 'package:smart_fitness_app/features/events/presentation/event_page.dart';
+import '../features/profile/presentation/notification_settings_page.dart';
 
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
@@ -160,6 +161,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/profile',
         builder: (context, state) => const ProfilePage(),
+      ),
+      GoRoute(
+        path: '/notification-settings',
+        builder: (context, state) => const NotificationSettingsPage(),
       ),
     ],
   );

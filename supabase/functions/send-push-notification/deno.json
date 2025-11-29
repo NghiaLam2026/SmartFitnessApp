@@ -1,0 +1,7 @@
+{
+  "imports": {
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2",
+    "firebase-admin": "https://esm.sh/firebase-admin@12.0.0"
+  }
+}
+
