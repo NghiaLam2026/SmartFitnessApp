@@ -34,14 +34,14 @@ migrate_working_dir/
 /coverage/
 node_modules/
 
-
+context/
 # Symbolication related
 app.*.symbols
 
 # Obfuscation related
 app.*.map.json
 
-# Android Studio will place build artifacts here
+# Android Studio will placehere
 /android/app/debug
 /android/app/profile
 /android/app/release
