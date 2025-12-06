@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/supabase/supabase_client.dart';
+import '../../../services/notification_service.dart';
 import '../data/auth_repository.dart';
 import '../data/auth_repository_impl.dart';
 
@@ -40,6 +41,16 @@ class AuthController extends StateNotifier<AuthState> {
       final res = await _ref.read(authRepositoryProvider).signInWithEmail(email: email, password: password);
       final user = res.user ?? supabase.auth.currentUser;
       state = state.copyWith(loading: false, user: user);
+      
+      // Sync FCM token after successful login
+      if (user != null) {
+        try {
+          await NotificationService.instance.syncTokenAfterLogin();
+        } catch (e) {
+          debugPrint('⚠️  Auth: Failed to sync notification token - $e');
+        }
+      }
+      
       if (context.mounted && user != null) context.go('/home');
     } on AuthException catch (e) {
       state = state.copyWith(loading: false, error: e.toString());
