@@ -299,7 +299,7 @@ class NotificationService {
     try {
       final userId = Supabase.instance.client.auth.currentUser?.id;
       if (userId == null) {
-        debugPrint('NotificationService: No authenticated user, skipping token sync');
+        debugPrint('🔔 NotificationService: No authenticated user, skipping token sync');
         return;
       }
 
@@ -323,15 +323,31 @@ class NotificationService {
         onConflict: 'user_id,token',
       );
 
-      debugPrint('NotificationService: Token persisted for $deviceName');
+      debugPrint('✅ NotificationService: FCM token persisted for $deviceName');
 
       // Send welcome notification if this is a new token
       if (isNewToken) {
+        debugPrint('🎉 NotificationService: New token detected, sending welcome notification');
         await _sendWelcomeNotification(userId);
       }
     } catch (error, stackTrace) {
-      debugPrint('NotificationService: Failed to persist token - $error');
+      debugPrint('❌ NotificationService: Failed to persist token - $error');
       FlutterError.reportError(FlutterErrorDetails(exception: error, stack: stackTrace));
+    }
+  }
+
+  /// Sync FCM token after user logs in
+  Future<void> syncTokenAfterLogin() async {
+    try {
+      debugPrint('🔄 NotificationService: Syncing FCM token after login...');
+      final token = await _firebaseMessaging.getToken();
+      if (token != null) {
+        await _persistToken(token);
+      } else {
+        debugPrint('⚠️  NotificationService: No FCM token available');
+      }
+    } catch (e) {
+      debugPrint('❌ NotificationService: Error syncing token after login - $e');
     }
   }
 
@@ -464,7 +480,7 @@ class NotificationService {
   /// Start background job processor to handle pending notifications
   void _startBackgroundJobProcessor() {
     // Run every 60 seconds to check for pending notification jobs
-    _backgroundJobTimer = Timer.periodic(const Duration(seconds: 25), (_) {
+    _backgroundJobTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       _processBackgroundNotificationJobs();
     });
     debugPrint('NotificationService: Background job processor started');
